@@ -1,0 +1,856 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Steam Radar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout: one ruled working table per detector; a game opens in a side panel whose
+   timeline carries the event overlay. Heat is the only loud colour on the page. */
+:root {
+  --paper: #E9EDF2;        /* survey-paper ground */
+  --panel: #F7F9FB;        /* tables, drawer */
+  --ink: #1B2333;          /* navy ink */
+  --slate: #5B6577;        /* secondary text */
+  --rule: #CBD3DE;
+  --rule-soft: #DEE4EC;
+  --indigo: #3B3DBF;       /* interactive */
+  --indigo-soft: rgba(59, 61, 191, .09);
+  --band: rgba(59, 61, 191, .07);
+  /* thermal ramp, cold → hot */
+  --t0: #3B3DBF; --t1: #6E35AE; --t2: #B8338F; --t3: #E0463F; --t4: #F06A2A; --t5: #F2B630;
+  --good: #1F7A4D; --good-soft: rgba(31, 122, 77, .12);
+  --bad: #B42C3C;  --bad-soft: rgba(180, 44, 60, .11);
+  --warn: #9A6200;
+  --shadow: 0 18px 50px rgba(27, 35, 51, .18);
+  --font: "Schibsted Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --r: 4px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --paper: #121722; --panel: #19202D; --ink: #E4E8EF; --slate: #98A2B4; --rule: #2E3748; --rule-soft: #242C3B;
+  --indigo: #9496FF; --indigo-soft: rgba(148, 150, 255, .13); --band: rgba(148, 150, 255, .055);
+  --t0: #6F72FF; --t1: #9B5BDB; --t2: #E05AB3; --t3: #FF6A5C; --t4: #FF8A45; --t5: #FFD15C;
+  --good: #4CC38A; --good-soft: rgba(76, 195, 138, .14); --bad: #FF7383; --bad-soft: rgba(255, 115, 131, .13);
+  --warn: #E9AE46; --shadow: 0 18px 50px rgba(0, 0, 0, .5); color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --paper: #121722; --panel: #19202D; --ink: #E4E8EF; --slate: #98A2B4; --rule: #2E3748; --rule-soft: #242C3B;
+  --indigo: #9496FF; --indigo-soft: rgba(148, 150, 255, .13); --band: rgba(148, 150, 255, .055);
+  --t0: #6F72FF; --t1: #9B5BDB; --t2: #E05AB3; --t3: #FF6A5C; --t4: #FF8A45; --t5: #FFD15C;
+  --good: #4CC38A; --good-soft: rgba(76, 195, 138, .14); --bad: #FF7383; --bad-soft: rgba(255, 115, 131, .13);
+  --warn: #E9AE46; --shadow: 0 18px 50px rgba(0, 0, 0, .5); color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--paper); color: var(--ink); font: 400 15px/1.45 var(--font);
+  font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased;
+}
+button, input, select { font: inherit; color: inherit; }
+a { color: var(--indigo); }
+:focus-visible { outline: 2px solid var(--indigo); outline-offset: 2px; border-radius: 2px; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-inline: clamp(16px, 3vw, 32px); }
+
+/* ── masthead ── */
+.top { padding-block: 22px 0; }
+.mast { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 12px 24px; }
+.word { margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -.035em; line-height: 1; display: flex; align-items: center; gap: 10px; }
+.word svg { width: 26px; height: 26px; flex: none; transform: translateY(2px); }
+.status { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; color: var(--slate); font-size: 13.5px; }
+.chip-status { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border: 1px solid var(--rule); border-radius: 99px; background: var(--panel); }
+.chip-status i { width: 7px; height: 7px; border-radius: 50%; background: var(--warn); }
+.chip-status.live i { background: var(--good); }
+.btn { border: 1px solid var(--rule); background: var(--panel); border-radius: var(--r); padding: 6px 12px; cursor: pointer; font-weight: 500; }
+.btn:hover { border-color: var(--indigo); color: var(--indigo); }
+.btn.primary { background: var(--indigo); border-color: var(--indigo); color: var(--panel); }
+.btn.primary:hover { filter: brightness(1.08); color: var(--panel); }
+
+.tabs { display: flex; gap: 2px; margin-top: 22px; border-bottom: 1px solid var(--rule); overflow-x: auto; scrollbar-width: none; }
+.tab { background: none; border: 0; border-bottom: 3px solid transparent; padding: 10px 14px 9px; cursor: pointer;
+  font-weight: 600; color: var(--slate); white-space: nowrap; display: flex; gap: 7px; align-items: baseline; }
+.tab:hover { color: var(--ink); }
+.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--ink); }
+.tab .n { font-weight: 500; font-size: 12.5px; color: var(--slate); }
+
+/* ── section head + filters ── */
+.head { display: flex; flex-wrap: wrap; gap: 14px 28px; align-items: end; justify-content: space-between; padding-block: 22px 14px; }
+.head h2 { margin: 0 0 4px; font-size: 21px; font-weight: 700; letter-spacing: -.015em; text-wrap: balance; }
+.head p { margin: 0; color: var(--slate); max-width: 62ch; font-size: 14px; }
+.filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.field { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--slate); font-weight: 500; }
+.field input, .field select { background: var(--panel); border: 1px solid var(--rule); border-radius: var(--r); padding: 6px 9px; font-size: 14px; color: var(--ink); min-width: 0; }
+.field input { width: 170px; }
+.field input:focus, .field select:focus { border-color: var(--indigo); outline: none; box-shadow: 0 0 0 3px var(--indigo-soft); }
+
+/* ── tables ── */
+.tbl-wrap { overflow-x: auto; background: var(--panel); border: 1px solid var(--rule); border-radius: var(--r); }
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; font-size: 12px; font-weight: 600; color: var(--slate); padding: 10px 12px; border-bottom: 1px solid var(--rule); white-space: nowrap; background: var(--panel); position: sticky; top: 0; }
+th.num, td.num { text-align: right; }
+th button { all: unset; cursor: pointer; }
+th button:hover { color: var(--ink); }
+th button[aria-sort]::after { content: " ↓"; }
+td { padding: 9px 12px; border-bottom: 1px solid var(--rule-soft); vertical-align: middle; font-size: 14px; }
+tbody tr:last-child td { border-bottom: 0; }
+tbody tr.row { cursor: pointer; }
+tbody tr.row:hover td { background: var(--indigo-soft); }
+tbody tr.row:focus-visible { outline: 2px solid var(--indigo); outline-offset: -2px; }
+.game { display: flex; gap: 11px; align-items: center; min-width: 250px; }
+.thumb { width: 64px; height: 30px; border-radius: 3px; flex: none; object-fit: cover; background: var(--rule-soft); }
+.ph { display: grid; place-items: center; font-size: 11px; font-weight: 700; letter-spacing: .02em; color: var(--slate); }
+.gname { font-weight: 600; line-height: 1.25; }
+.gmeta { color: var(--slate); font-size: 12.5px; line-height: 1.3; }
+.sub { color: var(--slate); font-size: 12.5px; display: block; }
+.up { color: var(--good); font-weight: 600; }
+.down { color: var(--bad); font-weight: 600; }
+.muted { color: var(--slate); }
+.spark { display: block; }
+.empty { padding: 40px 16px; text-align: center; color: var(--slate); }
+
+/* heat strip — the one loud element */
+.heat { display: inline-flex; align-items: center; gap: 8px; }
+.cells { display: inline-grid; grid-template-columns: repeat(12, 7px); gap: 2px; }
+.cells i { height: 14px; border-radius: 1.5px; background: var(--rule-soft); }
+.heat b { font-weight: 700; min-width: 2.6em; text-align: right; }
+
+.pill { display: inline-block; padding: 2px 9px; border-radius: 99px; font-size: 12.5px; font-weight: 600; white-space: nowrap; }
+.pill.beat { background: var(--good-soft); color: var(--good); }
+.pill.miss { background: var(--bad-soft); color: var(--bad); }
+.pill.track { background: var(--indigo-soft); color: var(--ink); }
+.pill.none { color: var(--slate); border: 1px dashed var(--rule); }
+.tag { display: inline-block; font-size: 12px; padding: 1px 7px; border: 1px solid var(--rule); border-radius: 3px; color: var(--slate); white-space: nowrap; }
+.tag.shared { border-color: var(--indigo); color: var(--indigo); background: var(--indigo-soft); }
+.tags { display: flex; flex-wrap: wrap; gap: 4px; }
+
+.banner { margin-top: 14px; padding: 10px 14px; border: 1px solid var(--bad); background: var(--bad-soft); border-radius: var(--r); font-size: 14px; }
+.note { margin-block: 18px 40px; color: var(--slate); font-size: 12.5px; max-width: 90ch; }
+
+/* ── comparable finder ── */
+.finder { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 10px; align-items: end; padding: 14px; background: var(--panel); border: 1px solid var(--rule); border-radius: var(--r); margin-bottom: 14px; }
+.taginput { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-height: 36px; padding: 4px 6px; border: 1px solid var(--rule); border-radius: var(--r); background: var(--paper); }
+.taginput:focus-within { border-color: var(--indigo); box-shadow: 0 0 0 3px var(--indigo-soft); }
+.taginput input { border: 0; background: transparent; outline: none; flex: 1; min-width: 120px; padding: 3px 4px; font-size: 14px; }
+.tchip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 4px 2px 8px; border-radius: 3px; background: var(--indigo-soft); color: var(--indigo); font-size: 13px; font-weight: 600; }
+.tchip button { border: 0; background: none; cursor: pointer; color: inherit; padding: 0 4px; font-size: 15px; line-height: 1; }
+.summary { display: flex; flex-wrap: wrap; gap: 8px 28px; padding: 2px 2px 14px; font-size: 14px; }
+.summary b { font-size: 18px; font-weight: 700; display: block; letter-spacing: -.01em; }
+.summary span { color: var(--slate); font-size: 12.5px; }
+
+/* ── drawer ── */
+.scrim { position: fixed; inset: 0; background: rgba(18, 23, 34, .35); z-index: 20; }
+.drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(780px, 100%); background: var(--panel); z-index: 21;
+  box-shadow: var(--shadow); overflow-y: auto; padding: calc(env(safe-area-inset-top, 0px) + 18px) clamp(16px, 3vw, 30px) calc(env(safe-area-inset-bottom, 0px) + 40px);
+  animation: slide .22s ease-out; }
+@keyframes slide { from { transform: translateX(28px); opacity: .4; } }
+@media (prefers-reduced-motion: reduce) { .drawer { animation: none; } }
+.dtop { display: flex; justify-content: space-between; gap: 12px; align-items: start; }
+.close { border: 1px solid var(--rule); background: var(--paper); border-radius: var(--r); width: 34px; height: 34px; cursor: pointer; font-size: 18px; line-height: 1; flex: none; }
+.dhead { display: grid; grid-template-columns: 184px minmax(0, 1fr); gap: 18px; align-items: start; margin-top: 4px; }
+.cover { width: 184px; aspect-ratio: 460 / 215; max-width: 100%; border-radius: 4px; object-fit: cover; background: var(--rule-soft); }
+.cover.ph { font-size: 22px; }
+.dname { margin: 0; font-size: clamp(24px, 3.4vw, 32px); font-weight: 800; letter-spacing: -.03em; line-height: 1.05; text-wrap: balance; }
+.dmeta { color: var(--slate); margin: 6px 0 10px; font-size: 14px; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 1px; background: var(--rule-soft); border: 1px solid var(--rule-soft); border-radius: var(--r); margin: 20px 0 22px; overflow: hidden; }
+.stat { background: var(--panel); padding: 10px 12px; }
+.stat span { display: block; font-size: 12px; color: var(--slate); }
+.stat b { font-size: 19px; font-weight: 700; letter-spacing: -.01em; }
+.stat em { font-style: normal; font-size: 12.5px; display: block; }
+.dh { margin: 26px 0 10px; font-size: 16px; font-weight: 700; display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: var(--r); overflow: hidden; }
+.seg button { border: 0; background: var(--panel); padding: 5px 11px; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--slate); }
+.seg button + button { border-left: 1px solid var(--rule); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--panel); }
+.chart { position: relative; }
+.chart svg { display: block; width: 100%; overflow: visible; }
+.chart text { fill: var(--slate); font-size: 11px; font-family: var(--font); }
+.tip { position: absolute; pointer-events: none; background: var(--ink); color: var(--panel); border-radius: 4px; padding: 8px 10px; font-size: 12.5px; line-height: 1.4; max-width: 260px; z-index: 2; box-shadow: var(--shadow); }
+.tip b { font-weight: 700; }
+.tip div + div { margin-top: 3px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 12.5px; color: var(--slate); margin-top: 8px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend svg { flex: none; }
+.log { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule-soft); }
+.log li { display: grid; grid-template-columns: 82px 128px minmax(0, 1fr); gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--rule-soft); font-size: 14px; align-items: center; }
+.log time { color: var(--slate); font-size: 13px; }
+.log .f { font-weight: 600; display: flex; align-items: center; gap: 7px; }
+.log .v { min-width: 0; overflow-wrap: anywhere; }
+.log .v s { color: var(--slate); text-decoration-color: var(--slate); }
+.log img { height: 40px; border-radius: 3px; vertical-align: middle; }
+.links { display: flex; flex-wrap: wrap; gap: 14px; font-size: 14px; }
+
+/* ── connect dialog ── */
+dialog { border: 1px solid var(--rule); border-radius: 6px; background: var(--panel); color: var(--ink); padding: 22px; width: min(520px, calc(100% - 32px)); box-shadow: var(--shadow); }
+dialog::backdrop { background: rgba(18, 23, 34, .4); }
+dialog h3 { margin: 0 0 6px; font-size: 18px; }
+dialog p { margin: 0 0 14px; color: var(--slate); font-size: 14px; }
+dialog .field { margin-bottom: 12px; }
+dialog .field input { width: 100%; }
+.drow { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+
+@media (max-width: 720px) {
+  .finder { grid-template-columns: 1fr 1fr; }
+  .finder > :first-child { grid-column: 1 / -1; }
+  .dhead { grid-template-columns: 1fr; }
+  .log li { grid-template-columns: 70px minmax(0, 1fr); }
+  .log li .v { grid-column: 1 / -1; }
+  .field input { width: 140px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="mast">
+      <h1 class="word">
+        <svg viewBox="0 0 26 26" aria-hidden="true"><circle cx="13" cy="13" r="11.5" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".35"/><circle cx="13" cy="13" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".55"/><path d="M13 13 L23.5 7.5 A11.5 11.5 0 0 1 24.4 14.6 Z" fill="var(--t4)"/><circle cx="19.5" cy="9.6" r="2" fill="var(--t5)"/></svg>
+        Steam Radar
+      </h1>
+      <div class="status" id="status"></div>
+    </div>
+    <nav class="tabs" role="tablist" id="tabs"></nav>
+  </header>
+  <main id="main"></main>
+  <p class="note">Followers come from each game's Steam community group. Estimates use editable multipliers in the database: wishlists ≈ followers × 12, units ≈ reviews × 30, developer net ≈ units × list price × 0.5. Treat them as ranges, not facts.</p>
+</div>
+
+<div id="drawer-root"></div>
+
+<dialog id="connect">
+  <form id="connect-form">
+    <h3>Connect your database</h3>
+    <p>Paste your Supabase project URL and its publishable key (or the older anon key). That key can only read, so it is safe in a browser. Both are saved in this browser only.</p>
+    <div class="field"><label for="c-url">Project URL</label><input id="c-url" type="url" placeholder="https://abcd1234.supabase.co" required></div>
+    <div class="field"><label for="c-key">Publishable key</label><input id="c-key" type="text" placeholder="sb_publishable_…" required autocomplete="off"></div>
+    <p id="c-err" class="down" hidden></p>
+    <div class="drow">
+      <button type="button" class="btn" id="c-demo">Use sample data</button>
+      <button type="button" class="btn" id="c-cancel">Cancel</button>
+      <button type="submit" class="btn primary">Connect</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════ helpers */
+const $ = (s, el = document) => el.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const nf = new Intl.NumberFormat("en-US");
+const num = v => v == null ? "–" : nf.format(Math.round(v));
+const compact = v => {
+  if (v == null) return "–";
+  const a = Math.abs(v);
+  if (a >= 1e6) return (v / 1e6).toFixed(a >= 1e7 ? 0 : 1) + "M";
+  if (a >= 1e4) return Math.round(v / 1e3) + "k";
+  if (a >= 1e3) return (v / 1e3).toFixed(1) + "k";
+  return String(Math.round(v));
+};
+const money = v => v == null ? "–" : "$" + compact(v);
+const price = c => c == null ? "–" : c === 0 ? "Free" : "$" + (c / 100).toFixed(2);
+const pct = v => v == null ? "–" : Math.round(v * 100) + "%";
+const signed = v => v == null ? "–" : (v > 0 ? "+" : v < 0 ? "−" : "") + compact(Math.abs(v));
+const DAY = 864e5;
+const toMs = d => Date.parse(String(d).slice(0, 10) + "T00:00:00Z");
+const fmtDay = (d, withYear) => new Date(toMs(d)).toLocaleDateString("en-GB", { day: "numeric", month: "short", ...(withYear ? { year: "numeric" } : {}), timeZone: "UTC" });
+const isoDay = ms => new Date(ms).toISOString().slice(0, 10);
+const store = {
+  get(k) { try { return JSON.parse(localStorage.getItem("radar:" + k)); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem("radar:" + k, JSON.stringify(v)); } catch {} },
+  del(k) { try { localStorage.removeItem("radar:" + k); } catch {} },
+};
+const median = a => { const s = a.filter(x => x != null).sort((x, y) => x - y); if (!s.length) return null; const m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+const initials = n => String(n || "?").replace(/^The /, "").split(/\s+/).slice(0, 2).map(w => w[0]).join("").toUpperCase();
+
+/* ══════════════════════════════════════════════════════════ data sources */
+function loadScript(src) {
+  return new Promise(res => { const s = document.createElement("script"); s.src = src; s.onload = () => res(true); s.onerror = () => res(false); document.head.appendChild(s); });
+}
+
+class LiveSource {
+  constructor(url, key) { this.url = url.replace(/\/+$/, ""); this.key = key; this.live = true; }
+  async q(path, opts = {}) {
+    const r = await fetch(`${this.url}/rest/v1/${path}`, {
+      // New publishable keys (sb_publishable_…) go on the apikey header only; legacy anon keys are JWTs and also go in Authorization.
+      ...opts, headers: { apikey: this.key, ...(this.key.startsWith("eyJ") ? { Authorization: `Bearer ${this.key}` } : {}), "Content-Type": "application/json", ...(opts.headers || {}) },
+    });
+    if (!r.ok) throw new Error(`${r.status} ${(await r.text()).slice(0, 160)}`);
+    return r.json();
+  }
+  rpc(fn, body) { return this.q(`rpc/${fn}`, { method: "POST", body: JSON.stringify(body) }); }
+  breakouts() { return this.q("v_breakouts?select=*&order=heat.desc.nullslast,followers_gain.desc&limit=200"); }
+  demos() { return this.q("v_demo_heat?select=*&order=week_ratio.desc.nullslast,peak_7d.desc&limit=200"); }
+  launches() { return this.q("v_launches?select=*&order=release_date.desc&limit=300"); }
+  quiet() { return this.q("v_quiet_earners?select=*&order=reviews_last_30d.desc.nullslast&limit=400"); }
+  tags() { return this.q("v_tags?select=tag,games&limit=400"); }
+  lastDay() { return this.q("daily_snapshots?select=day&order=day.desc&limit=1").then(r => r[0]?.day); }
+  async series(ids, days = 30) {
+    if (!ids.length) return {};
+    const since = isoDay(Date.now() - days * DAY), out = {};
+    for (let i = 0; i < ids.length; i += 120) {
+      const rows = await this.q(`daily_snapshots?select=appid,day,followers,reviews_total,ccu_peak,wishlist_rank&appid=in.(${ids.slice(i, i + 120).join(",")})&day=gte.${since}&order=day`);
+      for (const r of rows) (out[r.appid] ||= []).push([r.day, r.followers, r.reviews_total, r.ccu_peak, r.wishlist_rank]);
+    }
+    return out;
+  }
+  async game(id) {
+    const [app, series, changes, events] = await Promise.all([
+      this.q(`v_app_metrics?appid=eq.${id}`).then(r => r[0]),
+      this.series([id], 4000).then(s => s[id] || []),
+      this.q(`page_changes?appid=eq.${id}&order=day.desc,id.desc`),
+      this.q(`events?or=(appid.is.null,appid.eq.${id})&order=start_day`),
+    ]);
+    return { app, series, changes, events };
+  }
+  comparablesFor(id, limit = 8) { return this.rpc("comparables_for", { p_appid: id, p_limit: limit }); }
+  comparables(tags, priceCents, after, limit = 30) {
+    return this.rpc("find_comparables", { p_tags: tags, p_price_cents: priceCents, p_released_after: after, p_limit: limit });
+  }
+}
+
+class DemoSource {
+  constructor(d) {
+    this.d = d; this.live = false;
+    this.byId = new Map(d.apps.map(a => [a.appid, a]));
+  }
+  breakouts() { return this.d.breakouts; }
+  demos() { return this.d.demos; }
+  launches() { return this.d.launches; }
+  quiet() { return this.d.quiet; }
+  tags() { return this.d.tags; }
+  lastDay() { return this.d.generated_for; }
+  series(ids, days = 30) {
+    const cut = toMs(this.d.generated_for) - days * DAY, out = {};
+    for (const id of ids) out[id] = (this.d.series[id] || []).filter(r => toMs(r[0]) >= cut);
+    return out;
+  }
+  game(id) {
+    return {
+      app: this.byId.get(id), series: this.d.series[id] || [],
+      changes: this.d.changes.filter(c => c.appid === id).reverse(),
+      events: this.d.events.filter(e => e.appid == null || e.appid === id),
+    };
+  }
+  /* Same scoring as find_comparables() in db/schema.sql */
+  comparables(tags, priceCents, after, limit = 30, exclude = null) {
+    const w = i => 1 / (1 + 0.15 * i), qi = new Map(tags.map((t, i) => [t, i]));
+    const norm = tags.reduce((s, _, i) => s + w(i), 0), need = Math.min(2, tags.length);
+    const out = [];
+    for (const a of this.d.apps) {
+      if (a.type !== "game" || a.coming_soon || a.appid === exclude || !a.tags?.length) continue;
+      if (after && (!a.release_date || a.release_date < after)) continue;
+      let raw = 0;
+      a.tags.slice(0, 15).forEach((t, ci) => { if (qi.has(t)) raw += w(qi.get(t)) * w(ci); });
+      const shared = a.tags.filter(t => qi.has(t));
+      if (shared.length < need) continue;
+      const score = priceCents == null ? raw / norm
+        : 0.75 * raw / norm + 0.25 * Math.exp(-Math.abs(Math.log(((a.price_cents || 0) + 100) / (priceCents + 100))));
+      out.push({ ...a, shared_tags: shared, score, peak_ccu: a.peak_all });
+    }
+    return out.sort((x, y) => y.score - x.score || (y.reviews_total || 0) - (x.reviews_total || 0)).slice(0, limit);
+  }
+  comparablesFor(id, limit = 8) {
+    const a = this.byId.get(id);
+    return a?.tags?.length ? this.comparables(a.tags.slice(0, 8), a.price_cents, null, limit, id) : [];
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════ state */
+const TABS = [
+  { id: "breakouts", label: "Breakouts" },
+  { id: "demos", label: "Demo heat" },
+  { id: "launches", label: "Launches" },
+  { id: "quiet", label: "Quiet earners" },
+  { id: "compare", label: "Comparables" },
+];
+const S = {
+  src: null, tab: "breakouts", data: {}, spark: {}, error: null, lastDay: null,
+  filter: { q: "", tag: "", size: "all", maxReviews: "20000", verdict: "all" },
+  sort: {},
+  cmp: { tags: ["Cozy", "Building", "Relaxing"], price: "14.99", after: "", rows: null, busy: false },
+};
+
+async function boot() {
+  const saved = store.get("conn");
+  const hash = location.hash.slice(1);
+  if (TABS.some(t => t.id === hash)) S.tab = hash;
+  if (saved?.url && saved?.key) { S.src = new LiveSource(saved.url, saved.key); }
+  else {
+    // A deployment can ship a config.js that sets window.RADAR_CONFIG = { supabaseUrl, anonKey }.
+    await loadScript("config.js");
+    const c = window.RADAR_CONFIG;
+    if (c?.supabaseUrl && c?.anonKey) S.src = new LiveSource(c.supabaseUrl, c.anonKey);
+  }
+  if (!S.src) await useDemo();
+  await loadAll();
+}
+
+async function useDemo() {
+  if (!window.DEMO_DATA) await loadScript("demo-data.js");
+  S.src = window.DEMO_DATA ? new DemoSource(window.DEMO_DATA) : null;
+}
+
+async function loadAll() {
+  S.error = null; S.data = {}; S.spark = {};
+  renderChrome(); renderMain();
+  if (!S.src) { S.error = "Sample data is missing (demo-data.js) and no database is connected."; renderMain(); return; }
+  try {
+    const [b, d, l, q, t, last] = await Promise.all([S.src.breakouts(), S.src.demos(), S.src.launches(), S.src.quiet(), S.src.tags(), S.src.lastDay()]);
+    S.data = { breakouts: b, demos: d, launches: l, quiet: q, tags: t };
+    S.lastDay = last;
+    const ids = [...b.slice(0, 150).map(r => r.appid), ...d.map(r => r.appid), ...l.map(r => r.appid), ...q.slice(0, 150).map(r => r.appid)];
+    S.spark = await S.src.series([...new Set(ids)], 30);
+  } catch (e) {
+    S.error = `Couldn't read from the database: ${e.message}. Check the project URL and publishable key, and that db/schema.sql has been run.`;
+  }
+  renderChrome(); renderMain();
+  if (S.tab === "compare") runCompare();
+}
+
+/* ═════════════════════════════════════════════════════════════ rendering */
+function renderChrome() {
+  const live = S.src?.live;
+  $("#status").innerHTML = `
+    <span class="chip-status ${live ? "live" : ""}"><i></i>${live
+      ? `Live data${S.lastDay ? ` · last snapshot ${fmtDay(S.lastDay, true)}` : ""}`
+      : "Sample data · invented games"}</span>
+    <button class="btn ${live ? "" : "primary"}" id="open-connect">${live ? "Database settings" : "Connect your database"}</button>`;
+  $("#open-connect").onclick = openConnect;
+  const counts = { breakouts: S.data.breakouts?.length, demos: S.data.demos?.length, launches: S.data.launches?.length, quiet: S.data.quiet?.length };
+  $("#tabs").innerHTML = TABS.map(t => `<button class="tab" role="tab" id="tab-${t.id}" aria-selected="${t.id === S.tab}">${t.label}${counts[t.id] != null ? `<span class="n">${counts[t.id]}</span>` : ""}</button>`).join("");
+  for (const t of TABS) $("#tab-" + t.id).onclick = () => { S.tab = t.id; try { history.replaceState(null, "", "#" + t.id); } catch {} renderChrome(); renderMain(); if (t.id === "compare" && !S.cmp.rows) runCompare(); };
+}
+
+const thumb = (r, cls = "thumb") => r.header_image
+  ? `<img class="${cls}" src="${esc(r.header_image)}" alt="" loading="lazy">`
+  : `<span class="${cls} ph" aria-hidden="true">${esc(initials(r.name))}</span>`;
+
+const gameCell = (r, extra = "") => `<div class="game">${thumb(r)}<div><div class="gname">${esc(r.name || "App " + r.appid)}</div>
+  <div class="gmeta">${esc((r.developers || []).slice(0, 1).join(""))}${(r.tags || []).length ? `${r.developers?.length ? " · " : ""}${esc(r.tags.slice(0, 3).join(", "))}` : ""}${extra}</div></div></div>`;
+
+function sparkline(points, { w = 96, h = 26, color = "var(--indigo)" } = {}) {
+  const p = points.filter(v => v != null);
+  if (p.length < 2) return `<span class="muted">–</span>`;
+  const min = Math.min(...p), max = Math.max(...p), span = max - min || 1;
+  const xy = p.map((v, i) => [(i / (p.length - 1)) * (w - 4) + 2, h - 3 - ((v - min) / span) * (h - 6)]);
+  const d = xy.map((c, i) => (i ? "L" : "M") + c[0].toFixed(1) + " " + c[1].toFixed(1)).join("");
+  const last = xy[xy.length - 1];
+  return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true">
+    <path d="${d} L${last[0].toFixed(1)} ${h} L2 ${h} Z" fill="${color}" opacity=".12"/>
+    <path d="${d}" fill="none" stroke="${color}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="2.4" fill="${color}"/></svg>`;
+}
+const sparkOf = (id, col, color) => sparkline((S.spark[id] || []).map(r => r[col]), color ? { color } : {});
+
+const RAMP = ["--t0", "--t0", "--t1", "--t1", "--t2", "--t2", "--t3", "--t3", "--t4", "--t4", "--t5", "--t5"];
+function heatStrip(h) {
+  if (h == null) return `<span class="muted" title="Not enough similar-size games yet">–</span>`;
+  const lit = Math.max(0, Math.min(12, Math.round((h + 1) * 2)));     // −1σ → 0 cells, +5σ → 12
+  return `<span class="heat" title="${h.toFixed(2)} standard deviations above games of similar size">
+    <span class="cells">${RAMP.map((v, i) => `<i style="${i < lit ? `background:var(${v})` : ""}"></i>`).join("")}</span><b>${h.toFixed(1)}</b></span>`;
+}
+
+const TAB_COPY = {
+  breakouts: ["Breakouts", "Unreleased games ranked by how fast their followers grew this week, compared with games of a similar size. Growing from 200 to 2,000 outranks 50,000 to 55,000."],
+  demos: ["Demo heat", "Demos ranked by this week's peak players against last week's. Next Fest runs 19–26 October 2026."],
+  launches: ["Launches", "Games released in the last 90 days. Reviews per pre-launch follower, compared with games launched around the same time, decides beat, on track or miss."],
+  quiet: ["Quiet earners", "Released over a year ago, 1,000+ reviews, 80%+ positive, and still picking up reviews every month. The steady sellers that keep small studios going."],
+  compare: ["Comparable finder", "Pick the tags and price of a game idea to see how the closest released games did. Earlier tags count more."],
+};
+
+function sorted(tab, rows, def) {
+  const k = S.sort[tab] || def;
+  if (!k) return rows;
+  return [...rows].sort((a, b) => (b[k] ?? -Infinity) - (a[k] ?? -Infinity));
+}
+const sortTh = (tab, key, label, cls = "num", def) => {
+  const on = (S.sort[tab] || def) === key;
+  return `<th class="${cls}"><button data-sort="${tab}:${key}" ${on ? 'aria-sort="descending"' : ""}>${label}</button></th>`;
+};
+
+function applyFilters(rows, tagField = "tags") {
+  const q = S.filter.q.trim().toLowerCase(), tag = S.filter.tag;
+  return rows.filter(r =>
+    (!q || (r.name || "").toLowerCase().includes(q) || (r.parent_name || "").toLowerCase().includes(q) || (r.developers || []).some(d => d.toLowerCase().includes(q))) &&
+    (!tag || (r[tagField] || []).includes(tag)));
+}
+
+function filterBar(extra = "") {
+  const tags = (S.data.tags || []).slice(0, 300);
+  return `<div class="filters">
+    <div class="field"><label for="f-q">Search</label><input id="f-q" type="search" placeholder="Game or studio" value="${esc(S.filter.q)}"></div>
+    <div class="field"><label for="f-tag">Tag</label><input id="f-tag" list="taglist" placeholder="Any tag" value="${esc(S.filter.tag)}"></div>
+    <datalist id="taglist">${tags.map(t => `<option value="${esc(t.tag)}">`).join("")}</datalist>
+    ${extra}</div>`;
+}
+
+function renderMain() {
+  const m = $("#main");
+  const [title, blurb] = TAB_COPY[S.tab];
+  let body = "", extra = "";
+  const loading = !S.data.breakouts && !S.error;
+
+  if (S.tab === "breakouts") {
+    extra = `<div class="field"><label for="f-size">Size</label><select id="f-size">
+      ${[["all", "Any size"], ["s", "Under 1k followers"], ["m", "1k – 10k"], ["l", "10k+"]].map(([v, l]) => `<option value="${v}" ${S.filter.size === v ? "selected" : ""}>${l}</option>`).join("")}</select></div>`;
+    let rows = applyFilters(S.data.breakouts || []);
+    const sz = S.filter.size;
+    if (sz !== "all") rows = rows.filter(r => sz === "s" ? r.followers_7d < 1000 : sz === "m" ? r.followers_7d >= 1000 && r.followers_7d < 10000 : r.followers_7d >= 10000);
+    rows = sorted("breakouts", rows, "heat");
+    body = table(rows, `<th>Game</th>${sortTh("breakouts", "followers", "Followers")}<th>30 days</th>${sortTh("breakouts", "followers_gain", "Gained this week")}${sortTh("breakouts", "heat", "Heat vs peers", "", "heat")}<th class="num">Wishlist rank</th>`,
+      r => {
+        const g = r.followers_7d ? (r.followers - r.followers_7d) / r.followers_7d : null;
+        const rank = r.wishlist_rank == null ? `<span class="muted">–</span>`
+          : `#${num(r.wishlist_rank)} ${r.rank_new_entry ? `<span class="sub up">new on list</span>` : r.rank_climb ? `<span class="sub ${r.rank_climb > 0 ? "up" : "down"}">${r.rank_climb > 0 ? "▲" : "▼"} ${Math.abs(r.rank_climb)}</span>` : ""}`;
+        return `<td>${gameCell(r, r.release_date_text ? ` · ${esc(r.release_date_text)}` : "")}</td>
+          <td class="num"><b>${num(r.followers)}</b><span class="sub">≈ ${compact(r.est_wishlists)} wishlists</span></td>
+          <td>${sparkOf(r.appid, 1)}</td>
+          <td class="num"><span class="${r.followers_gain > 0 ? "up" : r.followers_gain < 0 ? "down" : ""}">${signed(r.followers_gain)}</span><span class="sub">${g == null ? "" : (g >= 0 ? "+" : "") + Math.round(g * 100) + "%"}</span></td>
+          <td>${heatStrip(r.heat)}</td>
+          <td class="num">${rank}</td>`;
+      }, "No unreleased games have a week of follower history yet. Breakouts appear after the collector has run for 7 days.");
+  }
+
+  if (S.tab === "demos") {
+    const rows = sorted("demos", applyFilters(S.data.demos || []), "week_ratio");
+    body = table(rows, `<th>Demo</th>${sortTh("demos", "peak_7d", "Peak players, 7 days")}<th>30 days</th>${sortTh("demos", "week_ratio", "vs last week", "num", "week_ratio")}${sortTh("demos", "parent_followers", "Game followers")}`,
+      r => `<td>${gameCell({ ...r, name: r.parent_name || r.name, header_image: r.parent_header_image }, " · demo")}</td>
+          <td class="num"><b>${num(r.peak_7d)}</b><span class="sub">all-time ${num(r.peak_all)}</span></td>
+          <td>${sparkOf(r.appid, 3, "var(--t4)")}</td>
+          <td class="num">${r.week_ratio == null ? `<span class="muted">new</span>` : `<span class="${r.week_ratio >= 1.15 ? "up" : r.week_ratio <= .85 ? "down" : ""}">${r.week_ratio.toFixed(2)}×</span>`}</td>
+          <td class="num">${num(r.parent_followers)}</td>`,
+      "No demo player counts yet. Demos are picked up from the store pages of watched games, then sampled every few hours.");
+  }
+
+  if (S.tab === "launches") {
+    extra = `<div class="field"><label for="f-verdict">Result</label><select id="f-verdict">
+      ${[["all", "Any"], ["beat", "Beat"], ["on track", "On track"], ["miss", "Miss"]].map(([v, l]) => `<option value="${v}" ${S.filter.verdict === v ? "selected" : ""}>${l}</option>`).join("")}</select></div>`;
+    let rows = applyFilters(S.data.launches || []);
+    if (S.filter.verdict !== "all") rows = rows.filter(r => r.verdict === S.filter.verdict);
+    rows = S.sort.launches ? sorted("launches", rows) : rows;
+    body = table(rows, `<th>Game</th><th>Released</th>${sortTh("launches", "followers_prelaunch", "Followers before")}${sortTh("launches", "reviews_total", "Reviews")}<th>Since launch</th>${sortTh("launches", "vs_peers", "vs peers")}<th>Result</th>${sortTh("launches", "peak_since_launch", "Peak players")}`,
+      r => `<td>${gameCell(r)}</td>
+        <td>${fmtDay(r.release_date)}<span class="sub">day ${num(r.days_live)}</span></td>
+        <td class="num">${num(r.followers_prelaunch)}</td>
+        <td class="num"><b>${num(r.reviews_total)}</b><span class="sub">${pct(r.pct_positive)} positive</span></td>
+        <td>${sparkOf(r.appid, 2)}</td>
+        <td class="num">${r.vs_peers == null ? "–" : r.vs_peers.toFixed(2) + "×"}<span class="sub">${r.reviews_per_follower == null ? "" : r.reviews_per_follower.toFixed(2) + " per follower"}</span></td>
+        <td><span class="pill ${r.verdict === "beat" ? "beat" : r.verdict === "miss" ? "miss" : r.verdict === "on track" ? "track" : "none"}">${esc(r.verdict)}</span></td>
+        <td class="num">${num(r.peak_since_launch)}</td>`,
+      "No launches in the last 90 days among watched games yet.");
+  }
+
+  if (S.tab === "quiet") {
+    extra = `<div class="field"><label for="f-max">Reviews up to</label><select id="f-max">
+      ${[["5000", "5,000"], ["20000", "20,000"], ["any", "No limit"]].map(([v, l]) => `<option value="${v}" ${S.filter.maxReviews === v ? "selected" : ""}>${l}</option>`).join("")}</select></div>`;
+    let rows = applyFilters(S.data.quiet || []);
+    if (S.filter.maxReviews !== "any") rows = rows.filter(r => r.reviews_total <= +S.filter.maxReviews);
+    rows = sorted("quiet", rows, "reviews_last_30d");
+    body = table(rows, `<th>Game</th><th>Released</th>${sortTh("quiet", "reviews_total", "Reviews")}${sortTh("quiet", "reviews_last_30d", "Last 30 days", "num", "reviews_last_30d")}${sortTh("quiet", "est_net_usd", "Est. net, lifetime")}${sortTh("quiet", "est_net_last_30d", "Est. net, 30 days")}<th class="num">Price</th>`,
+      r => `<td>${gameCell(r)}</td>
+        <td>${r.release_date ? new Date(toMs(r.release_date)).getUTCFullYear() : "–"}</td>
+        <td class="num"><b>${num(r.reviews_total)}</b><span class="sub">${pct(r.pct_positive)} positive</span></td>
+        <td class="num">${r.reviews_last_30d == null ? `<span class="muted" title="Needs a review count from a month ago">–</span>` : "+" + num(r.reviews_last_30d)}</td>
+        <td class="num">${money(r.est_net_usd)}<span class="sub">≈ ${compact(r.est_units)} units</span></td>
+        <td class="num">${money(r.est_net_last_30d)}</td>
+        <td class="num">${price(r.price_cents)}</td>`,
+      "No quiet earners yet. Run the monthly seed-universe job, then the weekly sweep to fill this list.");
+  }
+
+  if (S.tab === "compare") body = compareView();
+
+  m.innerHTML = `<div class="head"><div><h2>${title}</h2><p>${blurb}</p></div>${S.tab === "compare" ? "" : filterBar(extra)}</div>
+    ${S.error ? `<div class="banner" role="alert">${esc(S.error)} <button class="btn" id="err-demo">Use sample data</button></div>` : ""}
+    ${loading ? `<div class="tbl-wrap"><div class="empty">Loading…</div></div>` : body}`;
+  bindMain();
+}
+
+function table(rows, head, rowFn, emptyMsg) {
+  if (!rows.length) return `<div class="tbl-wrap"><div class="empty">${S.filter.q || S.filter.tag ? "No games match these filters." : emptyMsg}</div></div>`;
+  return `<div class="tbl-wrap"><table><thead><tr>${head}</tr></thead><tbody>
+    ${rows.slice(0, 200).map(r => `<tr class="row" tabindex="0" data-app="${r.appid}" data-parent="${r.parent_appid ?? ""}">${rowFn(r)}</tr>`).join("")}</tbody></table></div>`;
+}
+
+function compareView() {
+  const c = S.cmp, rows = c.rows;
+  let sum = "";
+  if (rows?.length) {
+    const reviewed = rows.filter(r => r.reviews_total != null);
+    const over1k = reviewed.filter(r => r.reviews_total >= 1000).length;
+    sum = `<div class="summary">
+      <div><b>${num(median(reviewed.map(r => r.reviews_total)))}</b><span>median reviews</span></div>
+      <div><b>${over1k} of ${reviewed.length}</b><span>passed 1,000 reviews</span></div>
+      <div><b>${money(median(rows.map(r => r.est_net_usd)))}</b><span>median est. net</span></div>
+      <div><b>${pct(median(reviewed.map(r => r.pct_positive)))}</b><span>median positive</span></div></div>`;
+  }
+  const tags = (S.data.tags || []).slice(0, 300);
+  return `<form class="finder" id="cmp-form">
+      <div class="field"><label for="cmp-tag">Tags, most defining first</label>
+        <div class="taginput">${c.tags.map((t, i) => `<span class="tchip">${esc(t)}<button type="button" data-rm="${i}" aria-label="Remove ${esc(t)}">×</button></span>`).join("")}
+          <input id="cmp-tag" list="cmp-taglist" placeholder="${c.tags.length ? "Add a tag" : "Type a tag, press Enter"}"></div>
+        <datalist id="cmp-taglist">${tags.map(t => `<option value="${esc(t.tag)}">`).join("")}</datalist></div>
+      <div class="field"><label for="cmp-price">Price (USD)</label><input id="cmp-price" type="number" min="0" step="0.01" placeholder="Any" value="${esc(c.price)}" style="width:110px"></div>
+      <div class="field"><label for="cmp-after">Released</label><select id="cmp-after">
+        ${[["", "Any time"], ["2", "Last 2 years"], ["5", "Last 5 years"]].map(([v, l]) => `<option value="${v}" ${c.after === v ? "selected" : ""}>${l}</option>`).join("")}</select></div>
+    </form>
+    ${c.busy && !rows ? `<div class="tbl-wrap"><div class="empty">Finding comparable games…</div></div>` : ""}
+    ${rows ? sum + (rows.length ? `<div class="tbl-wrap"><table><thead><tr><th>Game</th><th>Shared tags</th><th class="num">Match</th><th>Released</th><th class="num">Reviews</th><th class="num">Est. net</th><th class="num">Peak players</th><th class="num">Price</th></tr></thead><tbody>
+      ${rows.map(r => `<tr class="row" tabindex="0" data-app="${r.appid}"><td>${gameCell({ ...r, tags: [] })}</td>
+        <td><div class="tags">${(r.shared_tags || []).map(t => `<span class="tag shared">${esc(t)}</span>`).join("")}</div></td>
+        <td class="num">${Math.round(r.score * 100)}</td>
+        <td>${r.release_date ? fmtDay(r.release_date, true) : "–"}</td>
+        <td class="num"><b>${num(r.reviews_total)}</b><span class="sub">${pct(r.pct_positive)} positive</span></td>
+        <td class="num">${money(r.est_net_usd)}</td>
+        <td class="num">${num(r.peak_ccu)}</td>
+        <td class="num">${price(r.price_cents)}</td></tr>`).join("")}</tbody></table></div>`
+      : `<div class="tbl-wrap"><div class="empty">No released games share at least two of these tags. Try broader tags.</div></div>`) : ""}`;
+}
+
+async function runCompare() {
+  const c = S.cmp;
+  if (!S.src || !c.tags.length) { c.rows = c.tags.length ? null : []; if (S.tab === "compare") renderMain(); return; }
+  c.busy = true;
+  const cents = c.price === "" ? null : Math.round(parseFloat(c.price) * 100);
+  const base = S.src.live ? Date.now() : toMs(S.lastDay || Date.now());
+  const after = c.after ? isoDay(base - (+c.after) * 365 * DAY) : null;
+  try { c.rows = await S.src.comparables(c.tags, Number.isFinite(cents) ? cents : null, after, 30); }
+  catch (e) { S.error = "Comparable search failed: " + e.message; c.rows = []; }
+  c.busy = false;
+  if (S.tab === "compare") renderMain();
+}
+
+function bindMain() {
+  const m = $("#main");
+  const on = (id, ev, fn) => { const el = $("#" + id); if (el) el.addEventListener(ev, fn); };
+  const keepFocus = (id, fn) => e => { const pos = e.target.selectionStart; fn(e); const el = $("#" + id); if (el) { el.focus(); try { el.setSelectionRange(pos, pos); } catch {} } };
+  on("f-q", "input", keepFocus("f-q", e => { S.filter.q = e.target.value; renderMain(); }));
+  on("f-tag", "change", e => { S.filter.tag = e.target.value.trim(); renderMain(); });
+  on("f-size", "change", e => { S.filter.size = e.target.value; renderMain(); });
+  on("f-max", "change", e => { S.filter.maxReviews = e.target.value; renderMain(); });
+  on("f-verdict", "change", e => { S.filter.verdict = e.target.value; renderMain(); });
+  on("err-demo", "click", async () => { store.del("conn"); await useDemo(); loadAll(); });
+  m.querySelectorAll("[data-sort]").forEach(b => b.onclick = () => { const [t, k] = b.dataset.sort.split(":"); S.sort[t] = k; renderMain(); });
+  m.querySelectorAll("tr.row").forEach(tr => {
+    const open = () => openGame(+(S.tab === "demos" && tr.dataset.parent ? tr.dataset.parent : tr.dataset.app));
+    tr.onclick = open;
+    tr.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } };
+  });
+  // comparable finder
+  const addTag = v => { v = v.trim(); if (v && !S.cmp.tags.includes(v)) { S.cmp.tags.push(v); S.cmp.rows = null; renderMain(); runCompare(); $("#cmp-tag")?.focus(); } };
+  on("cmp-form", "submit", e => e.preventDefault());
+  on("cmp-tag", "keydown", e => {
+    if (e.key === "Enter") { e.preventDefault(); addTag(e.target.value); }
+    if (e.key === "Backspace" && !e.target.value && S.cmp.tags.length) { S.cmp.tags.pop(); renderMain(); runCompare(); $("#cmp-tag")?.focus(); }
+  });
+  on("cmp-tag", "change", e => { if ((S.data.tags || []).some(t => t.tag === e.target.value)) addTag(e.target.value); });
+  m.querySelectorAll("[data-rm]").forEach(b => b.onclick = () => { S.cmp.tags.splice(+b.dataset.rm, 1); renderMain(); runCompare(); });
+  on("cmp-price", "change", e => { S.cmp.price = e.target.value; runCompare(); });
+  on("cmp-after", "change", e => { S.cmp.after = e.target.value; runCompare(); });
+}
+
+/* ═════════════════════════════════════════════════════════════ game panel */
+const FIELD = {
+  capsule: ["Capsule art", "--t4"], trailers: ["Trailers", "--t4"], screenshots: ["Screenshots", "--t4"],
+  name: ["Name", "--t2"], short_description: ["Description", "--t2"], tags: ["Tags", "--t2"], genres: ["Genres", "--t2"],
+  price: ["Price", "--good"], discount: ["Discount", "--good"],
+  release_date: ["Release date", "--slate"], coming_soon: ["Release status", "--slate"],
+};
+const METRICS = [
+  { key: 1, label: "Followers" }, { key: 2, label: "Reviews" }, { key: 3, label: "Players" }, { key: 4, label: "Wishlist rank", invert: true },
+];
+let G = null;   // open game
+
+async function openGame(id) {
+  const root = $("#drawer-root");
+  const lastFocus = document.activeElement;
+  root.innerHTML = `<div class="scrim" id="scrim"></div><aside class="drawer" role="dialog" aria-modal="true" aria-label="Game details" id="drawer" tabindex="-1"><div class="empty">Loading…</div></aside>`;
+  const close = () => { root.innerHTML = ""; G = null; document.removeEventListener("keydown", onKey); lastFocus?.focus?.(); };
+  const onKey = e => { if (e.key === "Escape") close(); };
+  document.addEventListener("keydown", onKey);
+  $("#scrim").onclick = close;
+  $("#drawer").focus();
+  try {
+    const g = await S.src.game(id);
+    if (!g.app) throw new Error("This game is not in the database.");
+    const comps = await Promise.resolve(S.src.comparablesFor(id, 6)).catch(() => []);
+    const has = k => g.series.some(r => r[k] != null);
+    const metric = g.app.coming_soon ? 1 : has(2) ? 2 : has(3) ? 3 : 1;
+    G = { ...g, comps, metric, close };
+    drawGame();
+  } catch (e) {
+    $("#drawer").innerHTML = `<div class="dtop"><span></span><button class="close" id="d-close" aria-label="Close">×</button></div><div class="empty">${esc(e.message)}</div>`;
+    $("#d-close").onclick = close;
+  }
+}
+
+function drawGame() {
+  const { app: a, series, changes, comps } = G;
+  const d = $("#drawer");
+  const live = S.src.live;
+  const growth = a.followers_7d ? (a.followers - a.followers_7d) : null;
+  const stats = [
+    ["Followers", num(a.followers), growth != null ? `<em class="${growth >= 0 ? "up" : "down"}">${signed(growth)} wk</em>` : ""],
+    ["Est. wishlists", a.followers != null ? "≈ " + compact(a.est_wishlists) : "–", ""],
+    ["Reviews", num(a.reviews_total), a.pct_positive != null ? `<em class="muted">${pct(a.pct_positive)}</em>` : ""],
+    ["Peak players, 7 days", num(a.peak_7d), a.peak_all ? `<em class="muted">max ${compact(a.peak_all)}</em>` : ""],
+    ["Est. net revenue", a.coming_soon || a.is_free ? "–" : money(a.est_net_usd), ""],
+    ["Price", price(a.price_cents), ""],
+  ];
+  const available = METRICS.filter(m => series.some(r => r[m.key] != null));
+  d.innerHTML = `
+    <div class="dtop"><span class="muted" style="font-size:13px">${a.type === "demo" ? "Demo" : a.coming_soon ? "Upcoming" : "Released"} · app ${a.appid}</span>
+      <button class="close" id="d-close" aria-label="Close">×</button></div>
+    <div class="dhead">${thumb(a, "cover")}
+      <div><h2 class="dname">${esc(a.name)}</h2>
+        <p class="dmeta">${esc((a.developers || []).join(", ") || "Unknown studio")} · ${esc(a.release_date ? fmtDay(a.release_date, true) : a.release_date_text || "No date")}</p>
+        <div class="tags">${(a.tags || []).slice(0, 10).map(t => `<span class="tag">${esc(t)}</span>`).join("")}</div></div></div>
+    <div class="stats">${stats.map(([l, v, x]) => `<div class="stat"><span>${l}</span><b>${v}</b>${x}</div>`).join("")}</div>
+
+    <div class="dh"><span>Timeline</span>
+      <span class="seg" role="group" aria-label="Metric">${available.map(m => `<button data-m="${m.key}" aria-pressed="${m.key === G.metric}">${m.label}</button>`).join("")}</span></div>
+    ${available.length ? `<div class="chart" id="chart"></div>
+    <div class="legend">
+      <span><svg width="18" height="10"><rect width="18" height="10" fill="var(--band)" stroke="var(--indigo)" stroke-opacity=".3"/></svg>Steam sale or fest</span>
+      <span><svg width="10" height="10"><circle cx="5" cy="5" r="4" fill="var(--panel)" stroke="var(--indigo)" stroke-width="2"/></svg>Update or announcement</span>
+      <span><svg width="10" height="10"><path d="M5 0 L10 5 L5 10 L0 5Z" fill="var(--t4)"/></svg>Art and trailers</span>
+      <span><svg width="10" height="10"><path d="M5 0 L10 5 L5 10 L0 5Z" fill="var(--t2)"/></svg>Tags and text</span>
+      <span><svg width="10" height="10"><path d="M5 0 L10 5 L5 10 L0 5Z" fill="var(--good)"/></svg>Price</span>
+    </div>` : `<div class="empty">No history yet. The first snapshot appears after the next daily run.</div>`}
+
+    <div class="dh"><span>Store page changes</span><span class="muted" style="font-size:13px;font-weight:500">${changes.length ? changes.length + " logged" : ""}</span></div>
+    ${changes.length ? `<ul class="log">${changes.slice(0, 40).map(changeRow).join("")}</ul>`
+      : `<p class="muted" style="margin:0">No changes logged yet. Changes are detected from the second store-page check onward.</p>`}
+
+    <div class="dh"><span>Games like this</span>${a.tags?.length ? `<button class="btn" id="d-compare">Open in comparable finder</button>` : ""}</div>
+    ${comps?.length ? `<div class="tbl-wrap"><table><thead><tr><th>Game</th><th>Shared tags</th><th class="num">Reviews</th><th class="num">Est. net</th></tr></thead><tbody>
+      ${comps.map(r => `<tr class="row" tabindex="0" data-app="${r.appid}"><td>${gameCell({ ...r, tags: [] })}</td>
+        <td><div class="tags">${(r.shared_tags || []).slice(0, 4).map(t => `<span class="tag shared">${esc(t)}</span>`).join("")}</div></td>
+        <td class="num">${num(r.reviews_total)}</td><td class="num">${money(r.est_net_usd)}</td></tr>`).join("")}</tbody></table></div>`
+      : `<p class="muted" style="margin:0">${a.tags?.length ? "No released games share enough tags yet." : "Tags arrive from SteamSpy within a week of a game being watched."}</p>`}
+
+    ${live ? `<div class="dh"><span>Check it yourself</span></div><div class="links">
+      <a href="https://store.steampowered.com/app/${a.appid}/" target="_blank" rel="noopener">Steam store page</a>
+      <a href="https://steamdb.info/app/${a.appid}/charts/" target="_blank" rel="noopener">SteamDB charts</a></div>` : ""}`;
+
+  $("#d-close").onclick = G.close;
+  d.querySelectorAll("[data-m]").forEach(b => b.onclick = () => { G.metric = +b.dataset.m; drawGame(); });
+  d.querySelectorAll("tr.row").forEach(tr => { tr.onclick = () => openGame(+tr.dataset.app); tr.onkeydown = e => { if (e.key === "Enter") openGame(+tr.dataset.app); }; });
+  const cmp = $("#d-compare");
+  if (cmp) cmp.onclick = () => {
+    S.cmp.tags = a.tags.slice(0, 5); S.cmp.price = a.price_cents ? (a.price_cents / 100).toFixed(2) : ""; S.cmp.rows = null;
+    G.close(); S.tab = "compare"; renderChrome(); renderMain(); runCompare();
+  };
+  if (available.length) {
+    if (!available.some(m => m.key === G.metric)) G.metric = available[0].key;
+    drawChart();
+  }
+}
+
+function changeRow(c) {
+  const [label, color] = FIELD[c.field] || [c.field, "--slate"];
+  let v;
+  if (c.field === "capsule" && /^https?:/.test(c.new_value || ""))
+    v = `${c.old_value ? `<img src="${esc(c.old_value)}" alt="Previous capsule"> → ` : ""}<img src="${esc(c.new_value)}" alt="New capsule">`;
+  else if (c.field === "capsule") v = "New capsule art uploaded";
+  else if (c.field === "tags") v = [c.new_value && `<span class="up">+ ${esc(c.new_value)}</span>`, c.old_value && `<span class="down">− ${esc(c.old_value)}</span>`].filter(Boolean).join(" &nbsp; ");
+  else if (c.field === "short_description") v = `<s>${esc((c.old_value || "").slice(0, 90))}</s><br>${esc((c.new_value || "").slice(0, 160))}`;
+  else v = `${c.old_value != null ? `<s>${esc(c.old_value)}</s> → ` : ""}${esc(c.new_value ?? "–")}`;
+  return `<li><time>${fmtDay(c.day)}</time><span class="f"><svg width="9" height="9"><path d="M4.5 0 L9 4.5 L4.5 9 L0 4.5Z" fill="var(${color})"/></svg>${esc(label)}</span><span class="v">${v}</span></li>`;
+}
+
+function drawChart() {
+  const host = $("#chart");
+  if (!host) return;
+  const m = METRICS.find(x => x.key === G.metric);
+  const pts = G.series.filter(r => r[m.key] != null).map(r => ({ t: toMs(r[0]), v: r[m.key], day: String(r[0]).slice(0, 10) }));
+  const W = Math.max(300, host.clientWidth), H = 250, pad = { l: 50, r: 14, t: 26, b: 34 };
+  if (pts.length < 2) { host.innerHTML = `<div class="empty">Only one ${m.label.toLowerCase()} reading so far.</div>`; return; }
+  const t0 = Math.min(...G.series.map(r => toMs(r[0]))), t1 = Math.max(...G.series.map(r => toMs(r[0])));
+  let lo = Math.min(...pts.map(p => p.v)), hi = Math.max(...pts.map(p => p.v));
+  if (lo === hi) { lo -= 1; hi += 1; }
+  const padV = (hi - lo) * .08; lo = Math.max(m.invert ? 1 : 0, lo - padV); hi += padV;
+  const x = t => pad.l + ((t - t0) / Math.max(DAY, t1 - t0)) * (W - pad.l - pad.r);
+  const y = v => m.invert ? pad.t + ((v - lo) / (hi - lo)) * (H - pad.t - pad.b) : H - pad.b - ((v - lo) / (hi - lo)) * (H - pad.t - pad.b);
+
+  // ticks
+  const step = (() => { const raw = (hi - lo) / 4, p = 10 ** Math.floor(Math.log10(raw)); return [1, 2, 2.5, 5, 10].map(s => s * p).find(s => s >= raw); })();
+  const yt = []; for (let v = Math.ceil(lo / step) * step; v <= hi; v += step) yt.push(v);
+  const spanDays = (t1 - t0) / DAY, xEvery = spanDays > 120 ? 30 : spanDays > 50 ? 14 : 7;
+  const xt = []; for (let t = t0; t <= t1; t += xEvery * DAY) xt.push(t);
+
+  const inRange = (s, e) => toMs(e || s) >= t0 && toMs(s) <= t1;
+  const bands = G.events.filter(e => e.appid == null && inRange(e.start_day, e.end_day));
+  const news = G.events.filter(e => e.appid != null && inRange(e.start_day));
+  const changes = G.changes.filter(c => inRange(c.day));
+  const line = pts.map((p, i) => (i ? "L" : "M") + x(p.t).toFixed(1) + " " + y(p.v).toFixed(1)).join("");
+  const base = m.invert ? pad.t : H - pad.b;
+
+  host.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${m.label} over time with events">
+    ${(() => { let labelEnd = -1; return bands.map(e => {
+      const a = Math.max(pad.l, x(toMs(e.start_day))), b = Math.min(W - pad.r, x(toMs(e.end_day || e.start_day) + DAY));
+      const label = e.title.replace(/^Steam /, ""), lw = label.length * 6;
+      const show = a + 4 > labelEnd && a + 4 + lw < W - pad.r;   // skip labels that would collide
+      if (show) labelEnd = a + 8 + lw;
+      return `<rect x="${a}" y="${pad.t}" width="${Math.max(2, b - a)}" height="${H - pad.t - pad.b}" fill="var(--band)"><title>${esc(e.title)}</title></rect>
+      ${show ? `<text x="${a + 4}" y="${pad.t + 12}">${esc(label)}</text>` : ""}`; }).join(""); })()}
+    ${yt.map(v => `<line x1="${pad.l}" x2="${W - pad.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--rule-soft)"/><text x="${pad.l - 8}" y="${y(v) + 4}" text-anchor="end">${m.invert ? "#" + compact(v) : compact(v)}</text>`).join("")}
+    ${xt.map(t => `<text x="${x(t)}" y="${H - pad.b + 18}" text-anchor="middle">${fmtDay(isoDay(t))}</text>`).join("")}
+    <path d="${line} L${x(pts.at(-1).t)} ${base} L${x(pts[0].t)} ${base} Z" fill="var(--indigo)" opacity=".08"/>
+    <path d="${line}" fill="none" stroke="var(--indigo)" stroke-width="2" stroke-linejoin="round"/>
+    <circle cx="${x(pts.at(-1).t)}" cy="${y(pts.at(-1).v)}" r="3.5" fill="var(--indigo)"/>
+    ${news.map(e => `<circle cx="${x(toMs(e.start_day))}" cy="${H - pad.b}" r="4" fill="var(--panel)" stroke="var(--indigo)" stroke-width="2"/>`).join("")}
+    ${changes.map((c, i) => { const cx = x(toMs(c.day)), col = (FIELD[c.field] || [0, "--slate"])[1]; return `<path d="M${cx} ${pad.t - 14} l5 5 l-5 5 l-5 -5Z" fill="var(${col})"/>`; }).join("")}
+    <line id="xh" y1="${pad.t}" y2="${H - pad.b}" stroke="var(--slate)" stroke-dasharray="3 3" visibility="hidden"/>
+    <circle id="xd" r="4" fill="var(--indigo)" stroke="var(--panel)" stroke-width="2" visibility="hidden"/>
+    <rect x="${pad.l}" y="0" width="${W - pad.l - pad.r}" height="${H}" fill="transparent" id="hover"/>
+  </svg><div class="tip" id="tip" hidden></div>`;
+
+  const svg = host.querySelector("svg"), tip = $("#tip"), xh = $("#xh"), xd = $("#xd");
+  const move = ev => {
+    const r = svg.getBoundingClientRect(), px = (ev.clientX - r.left) * (W / r.width);
+    const t = t0 + ((px - pad.l) / (W - pad.l - pad.r)) * (t1 - t0);
+    const p = pts.reduce((a, b) => Math.abs(b.t - t) < Math.abs(a.t - t) ? b : a);
+    const day = p.day;
+    const lines = [
+      ...bands.filter(e => day >= String(e.start_day).slice(0, 10) && day <= String(e.end_day || e.start_day).slice(0, 10)).map(e => `<div>▭ ${esc(e.title)}</div>`),
+      ...news.filter(e => String(e.start_day).slice(0, 10) === day).map(e => `<div>○ ${esc(e.title)}</div>`),
+      ...changes.filter(c => String(c.day).slice(0, 10) === day).map(c => `<div>◆ ${esc((FIELD[c.field] || [c.field])[0])} changed</div>`),
+    ];
+    xh.setAttribute("x1", x(p.t)); xh.setAttribute("x2", x(p.t)); xh.setAttribute("visibility", "visible");
+    xd.setAttribute("cx", x(p.t)); xd.setAttribute("cy", y(p.v)); xd.setAttribute("visibility", "visible");
+    tip.innerHTML = `<div><b>${fmtDay(day, true)}</b></div><div>${m.label}: <b>${m.invert ? "#" + num(p.v) : num(p.v)}</b></div>${lines.join("")}`;
+    tip.hidden = false;
+    const left = (x(p.t) / W) * r.width;
+    tip.style.left = Math.min(Math.max(0, left + 12), r.width - tip.offsetWidth) + "px";
+    tip.style.top = "8px";
+  };
+  const hover = $("#hover");
+  hover.addEventListener("pointermove", move);
+  hover.addEventListener("pointerdown", move);
+  hover.addEventListener("pointerleave", () => { tip.hidden = true; xh.setAttribute("visibility", "hidden"); xd.setAttribute("visibility", "hidden"); });
+}
+let rz; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => G && drawChart(), 120); });
+
+/* ═════════════════════════════════════════════════════════════ connecting */
+function openConnect() {
+  const dlg = $("#connect"), saved = store.get("conn") || {};
+  $("#c-url").value = saved.url || ""; $("#c-key").value = saved.key || ""; $("#c-err").hidden = true;
+  dlg.showModal();
+}
+$("#c-cancel").onclick = () => $("#connect").close();
+$("#c-demo").onclick = async () => { store.del("conn"); $("#connect").close(); await useDemo(); loadAll(); };
+$("#connect-form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const url = $("#c-url").value.trim(), key = $("#c-key").value.trim(), err = $("#c-err");
+  const src = new LiveSource(url, key);
+  try { await src.lastDay(); }
+  catch (ex) { err.textContent = `That didn't connect: ${ex.message}. Check the URL and key, and that db/schema.sql has been run in this project.`; err.hidden = false; return; }
+  store.set("conn", { url, key }); S.src = src; $("#connect").close(); loadAll();
+});
+
+boot();
+</script>
+</body>
+</html>

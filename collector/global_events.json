@@ -1,0 +1,32 @@
+{
+  "_comment": "Steam-wide events drawn on every chart. Dates from Valve's published sale/fest calendar (as reported Oct 2026: https://www.digitalcitizen.life/valve-reveals-full-steam-sale-and-festival-schedule-through-july-2027/). Add showcases (kind: showcase) and anything else you want as a marker. 'id' must be unique.",
+  "events": [
+    {"id": "train-fest-2026",          "title": "Train Fest",                 "start": "2026-07-20", "end": "2026-07-27"},
+    {"id": "cyberpunk-fest-2026",      "title": "Cyberpunk Fest",             "start": "2026-08-03", "end": "2026-08-10"},
+    {"id": "pins-pegs-fest-2026",      "title": "Pins and Pegs Fest",         "start": "2026-08-17", "end": "2026-08-20"},
+    {"id": "pve-survival-fest-2026",   "title": "PvE Survival Crafting Fest", "start": "2026-08-31", "end": "2026-09-07"},
+    {"id": "programming-fest-2026",    "title": "Programming Fest",           "start": "2026-09-10", "end": "2026-09-14"},
+    {"id": "party-rpg-fest-2026",      "title": "Party Based RPG Fest",       "start": "2026-09-14", "end": "2026-09-21"},
+    {"id": "autumn-sale-2026",         "title": "Steam Autumn Sale",          "start": "2026-10-01", "end": "2026-10-08"},
+    {"id": "cooking-fest-2026",        "title": "Cooking Fest",               "start": "2026-10-12", "end": "2026-10-19"},
+    {"id": "next-fest-oct-2026",       "title": "Steam Next Fest",            "start": "2026-10-19", "end": "2026-10-26"},
+    {"id": "scream-fest-2026",         "title": "Steam Scream Fest",          "start": "2026-10-26", "end": "2026-11-02"},
+    {"id": "auto-battler-fest-2026",   "title": "Auto Battler RPG Fest",      "start": "2026-11-16", "end": "2026-11-23"},
+    {"id": "winter-sale-2026",         "title": "Steam Winter Sale",          "start": "2026-12-17", "end": "2027-01-04"},
+    {"id": "desktop-companion-2027",   "title": "Desktop Companion Fest",     "start": "2027-01-14", "end": "2027-01-18"},
+    {"id": "shop-keeper-fest-2027",    "title": "Shop Keeper Fest",           "start": "2027-01-25", "end": "2027-02-01"},
+    {"id": "sheep-fest-2027",          "title": "Sheep Fest",                 "start": "2027-02-04", "end": "2027-02-08"},
+    {"id": "couch-coop-fest-2027",     "title": "Couch Co-Op Fest",           "start": "2027-02-08", "end": "2027-02-15"},
+    {"id": "next-fest-feb-2027",       "title": "Steam Next Fest",            "start": "2027-02-22", "end": "2027-03-01"},
+    {"id": "rhythm-fest-2027",         "title": "Rhythm Fest",                "start": "2027-03-08", "end": "2027-03-15"},
+    {"id": "spring-sale-2027",         "title": "Steam Spring Sale",          "start": "2027-03-18", "end": "2027-03-25"},
+    {"id": "dinos-robots-fest-2027",   "title": "Dinos versus Robots Fest",   "start": "2027-03-29", "end": "2027-04-05"},
+    {"id": "racing-fest-2027",         "title": "Racing Fest",                "start": "2027-04-12", "end": "2027-04-19"},
+    {"id": "witch-fest-2027",          "title": "Witch Fest",                 "start": "2027-04-22", "end": "2027-04-26"},
+    {"id": "fighting-fest-2027",       "title": "Fighting Fest",              "start": "2027-04-26", "end": "2027-05-03"},
+    {"id": "rts-fest-2027",            "title": "Real Time Strategy Fest",    "start": "2027-05-10", "end": "2027-05-17"},
+    {"id": "mountaineering-fest-2027", "title": "Mountaineering Fest",        "start": "2027-05-31", "end": "2027-06-03"},
+    {"id": "next-fest-jun-2027",       "title": "Steam Next Fest",            "start": "2027-06-14", "end": "2027-06-21"},
+    {"id": "summer-sale-2027",         "title": "Steam Summer Sale",          "start": "2027-06-24", "end": "2027-07-08"}
+  ]
+}

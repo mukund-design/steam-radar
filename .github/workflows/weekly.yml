@@ -1,7 +1,7 @@
-name: quiet-earner sweep
+name: older games sweep
 on:
   schedule:
-    - cron: "23 9 * * 0"          # Sundays: refresh reviews for the quiet-earner universe
+    - cron: "23 9 * * *"          # daily: review totals + history for a seventh of the older games
     - cron: "11 2 1 * *"          # 1st of the month: re-seed the universe from SteamSpy
   workflow_dispatch:
     inputs:
@@ -11,8 +11,8 @@ on:
 concurrency: { group: collector, cancel-in-progress: false }
 jobs:
   weekly:
-    runs-on: ubuntu-latest
-    timeout-minutes: 350
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -27,4 +27,4 @@ jobs:
       - run: python -m collector.run ${{ steps.cmd.outputs.c }}
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          SWEEP_BATCH: ${{ vars.SWEEP_BATCH || '3000' }}
+          SWEEP_BATCH: ${{ vars.SWEEP_BATCH || '3500' }}

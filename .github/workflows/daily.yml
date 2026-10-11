@@ -6,8 +6,8 @@ on:
 concurrency: { group: collector, cancel-in-progress: false }
 jobs:
   daily:
-    runs-on: ubuntu-latest
-    timeout-minutes: 300
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150          # caps a stuck run; progress is saved as it goes
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

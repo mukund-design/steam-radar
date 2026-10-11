@@ -3,7 +3,7 @@ from __future__ import annotations
 
 # Field -> how to render it in the change log.
 TRACKED = ("name", "capsule", "short_description", "price", "discount", "release_date",
-           "coming_soon", "trailers", "screenshots", "genres")
+           "coming_soon", "early_access", "dlc", "trailers", "screenshots", "genres")
 
 
 def page_state(details: dict) -> dict:
@@ -19,7 +19,9 @@ def page_state(details: dict) -> dict:
         "coming_soon": details.get("coming_soon"),
         "trailers": details.get("trailer_ids") or [],
         "screenshots": details.get("screenshot_count"),
-        "genres": sorted(details.get("genres") or []),
+        "genres": sorted(g for g in details.get("genres") or [] if g != "Early Access"),
+        "early_access": bool(details.get("early_access")),
+        "dlc": details.get("dlc_count") or 0,
     }
 
 
@@ -34,6 +36,10 @@ def _fmt(field: str, v) -> str | None:
         return ", ".join(map(str, v)) if v else "(none)"
     if field == "coming_soon":
         return "coming soon" if v else "released"
+    if field == "early_access":
+        return "Early Access" if v else "Full release"
+    if field == "dlc":
+        return f"{v} DLC"
     return str(v)
 
 
@@ -43,7 +49,11 @@ def diff_states(old: dict | None, new: dict) -> list[dict]:
         return []
     rows = []
     for f in TRACKED:
+        if f not in old:
+            continue           # field added in a later version: nothing to compare against yet
         a, b = old.get(f), new.get(f)
+        if f == "genres":      # Early Access has its own field; older states kept it in genres
+            a = [g for g in a or [] if g != "Early Access"]
         if a == b:
             continue
         if f == "capsule" and (a is None or b is None):
@@ -62,6 +72,11 @@ def diff_states(old: dict | None, new: dict) -> list[dict]:
         if f == "capsule":
             rows.append({"field": f, "old_value": old.get("header_image") or a,
                          "new_value": new.get("header_image") or b})
+            continue
+        if f == "dlc" and a is not None and b is not None and b > a:
+            rows.append({"field": f, "old_value": _fmt(f, a), "new_value": f"{b} DLC (+{b - a} new)"})
+            continue
+        if a == b:
             continue
         rows.append({"field": f, "old_value": _fmt(f, a), "new_value": _fmt(f, b)})
     return rows

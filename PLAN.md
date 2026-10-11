@@ -90,10 +90,15 @@ concept (pick tags + price).
 
 ## 6. Build order
 
-- **Phase 1 (done in this repo):** schema + views, collector for all tiers,
-  change log, event overlay, comparables, dashboard.
-- **Phase 2:** daily digest (top movers per detector → Discord/email), alert
-  thresholds, triage inbox (study / ignore / competitor), notes.
+- **Phase 1 (done):** schema + views, collector for all tiers, change log, event
+  overlay, comparables, dashboard.
+- **Phase 1.5 (done):** Overview tab (the daily digest, in the page) and Genres tab
+  (per-genre momentum, launch results and pairings); cached metrics for speed.
+- **Phase 1.6 (done):** Surges tab: released games picking up reviews/players, with
+  the likely cause (1.0 launch, DLC, major update, free weekend, discount, Steam sale,
+  page change, patch, review bomb, or nothing on Steam); typed update posts; review
+  history since launch; older games re-checked weekly via a daily sweep.
+- **Phase 2:** alert thresholds, triage inbox (study / ignore / competitor), notes.
 - **Phase 3:** Twitch viewer counts, achievement-based retention proxy, review
   text clustering + language mix, self-calibrating multipliers per genre,
   capsule-art trend board.

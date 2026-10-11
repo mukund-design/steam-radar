@@ -25,8 +25,9 @@ class FakeSteam(SteamClient):
         self.capsule = "100"
         self.discount = 0
         self.followers_by_app = {10: 1000, 20: 200, 30: 50000}
+        self.early_access = {30: True}
         self.tags_by_app = {10: ["Cozy", "Building", "Relaxing"], 20: ["Roguelike", "Action"],
-                            30: ["Cozy", "Building", "Simulation"]}
+                            30: ["Indie", "Cozy", "Building", "Simulation"]}
 
     def most_played(self): return [{"appid": 30, "rank": 1, "peak_in_game": 9000}]
     def featured(self): return {"coming_soon": [10, 20], "top_sellers": [30, 99]}
@@ -53,13 +54,28 @@ class FakeSteam(SteamClient):
                 "discount_pct": self.discount, "developers": ["Studio"], "publishers": ["Studio"],
                 "genres": ["Indie"], "header_image": f"https://x/{a}/header.jpg?t={self.capsule}",
                 "capsule_version": self.capsule, "short_description": "desc",
-                "trailer_ids": ["1"], "screenshot_count": 5, "demo_appids": [31] if a == 30 else []}
+                "trailer_ids": ["1"], "screenshot_count": 5, "demo_appids": [31] if a == 30 else [],
+                "early_access": self.early_access.get(a, False), "dlc_count": 0}
 
     def reviews_summary(self, a): return {"total": 1200 if a == 30 else 0, "positive": 1100 if a == 30 else 0}
     def followers(self, a): return self.followers_by_app.get(a)
     def current_players(self, a): return 400 if a in (30, 31) else None
     def news(self, a, count=10): return [{"gid": f"n{a}", "title": "Patch", "url": "u", "day": date(2026, 10, 1)}]
     def steamspy_tags(self, a): return self.tags_by_app.get(a, [])
+
+    def review_histogram(self, a):
+        # game 30: 2 reviews a day for three weeks, then 10 a day this week -> 5x its usual week
+        today = date.today()
+        recent = [[(today - timedelta(days=d)).isoformat(), 10 if d < 7 else 2, 0] for d in range(29, -1, -1)]
+        if a != 30:
+            recent = [[r[0], 1, 0] for r in recent]
+        return {"rollup_type": "month", "rollups": [["2024-03-01", 400, 20], ["2024-04-01", 120, 8]], "recent": recent}
+
+    def partner_events(self, a, count=30):
+        if a != 30:
+            return None                                   # event feed failed: falls back to news()
+        return [{"gid": "e30", "title": "The Frozen North update", "day": date.today() - timedelta(days=3),
+                 "event_type": 14, "category": "major_update", "url": "u"}]
 
 
 @pytest.fixture(scope="module")
@@ -71,16 +87,21 @@ def conn():
     c.close()
 
 
+def refresh(conn):
+    conn.execute("select refresh_metrics()")
+
+
 def q(conn, sql, *args):
     return conn.execute(sql, args).fetchall()
 
 
 def test_two_days(conn, monkeypatch):
     steam = FakeSteam()
-    day1 = date(2026, 10, 1)
+    day1 = date.today() - timedelta(days=7)
     monkeypatch.setattr(run, "today", lambda: day1)
     run.discover(steam, URL)
     run.snapshot(steam, URL)
+    refresh(conn)
 
     # discovery + delisting
     assert q(conn, "select skip_reason, watch from apps where appid = 99") == [("no store page", False)]
@@ -97,17 +118,32 @@ def test_two_days(conn, monkeypatch):
     steam.capsule, steam.discount = "200", 40
     steam.followers_by_app = {10: 1100, 20: 900, 30: 50500}
     steam.tags_by_app[20] = ["Roguelike", "Deckbuilder"]
+    steam.early_access[30] = False                        # game 30 leaves Early Access
     day8 = day1 + timedelta(days=7)
     monkeypatch.setattr(run, "today", lambda: day8)
     conn.execute("update apps set details_at = details_at - interval '4 days', tags_at = tags_at - interval '8 days'")
     run.discover(steam, URL)
     run.snapshot(steam, URL)
+    refresh(conn)
 
     changes = q(conn, "select appid, field, old_value, new_value from page_changes where appid = 20 order by field")
     fields = {c[1]: c for c in changes}
     assert set(fields) == {"capsule", "discount", "tags"}     # list price unchanged
     assert fields["discount"][2:] == ("0%", "40%")
     assert fields["tags"][2:] == ("Action", "Deckbuilder")
+
+    # surges: game 30 had 5x its usual reviews this week; it left Early Access and posted a major update
+    assert q(conn, "select field, new_value from page_changes where appid = 30 and field = 'early_access'") == [
+        ("early_access", "Full release")]
+    assert q(conn, "select category, event_type from events where appid = 30 and kind = 'news'") == [("major_update", 14)]
+    run.investigate_surges(steam, URL)
+    srg = q(conn, "select appid, kind, week_reviews, usual_week, ratio, cause from mv_surges")
+    assert srg == [(30, "reviews", 70, 14, 5, "release")], srg      # leaving Early Access outranks the update
+    causes = q(conn, "select causes from mv_surges where appid = 30")[0][0]
+    assert [c["cause"] for c in causes][:2] == ["release", "major_update"]
+    assert q(conn, "select cause, surges from v_surge_causes") == [("release", 1)]
+    assert q(conn, "select overview()->'counts'->>'surges'")[0][0] == "1"
+    assert q(conn, "select rollup_type from review_history where appid = 30") == [("month",)]
 
     # detectors
     b = q(conn, "select appid, followers_gain from v_breakouts order by heat desc nulls last, followers_gain desc")
@@ -121,7 +157,27 @@ def test_two_days(conn, monkeypatch):
     assert comps == [(30, ["Cozy", "Building"])]
     assert q(conn, "select appid from comparables_for(30)") == []          # 10 is unreleased
     conn.execute("update apps set coming_soon = false, release_date = '2026-01-01' where appid = 10")
+    refresh(conn)
     assert [r[0] for r in q(conn, "select appid from comparables_for(30)")] == [10]
+    conn.execute("update apps set coming_soon = true, release_date = null where appid = 10")
+    refresh(conn)
+
+    # genres: each game counts under its first five non-generic tags
+    g = {r[0]: r[1:] for r in q(conn, "select tag, games, upcoming, released, up_n from v_genres")}
+    assert g == {}                                   # fewer than 5 games per tag in this tiny set
+    rows = q(conn, """select t, count(*) from apps, unnest(genre_tags(tags)) t
+                       where type = 'game' group by t order by t""")
+    assert ("Cozy", 2) in rows and ("Indie", 1) not in rows
+
+    detail = q(conn, "select genre_detail('Cozy')")[0][0]
+    assert {b["appid"] for b in detail["breakouts"]} == {10}
+    assert {p["tag"] for p in detail["pairs"]} >= {"Building"}
+
+    ov = q(conn, "select overview()")[0][0]
+    assert ov["upcoming_tracked"] == 2 and ov["event_next"] is not None
+    assert {x["appid"] for x in ov["new_on_list"]} == set() or ov["new_on_list"][0]["wishlist_rank"]
+    causes = [c for x in ov["breakouts"] for c in x["causes"]]
+    assert all("kind" in c for c in causes)
 
 
 def test_launch_and_sweep(conn, monkeypatch):
@@ -132,6 +188,7 @@ def test_launch_and_sweep(conn, monkeypatch):
     conn.execute("insert into daily_snapshots (appid, day, reviews_total, reviews_positive) "
                  "values (20, current_date, 450, 400) on conflict (appid, day) do update "
                  "set reviews_total = 450, reviews_positive = 400")
+    refresh(conn)
     row = q(conn, "select followers_prelaunch, reviews_per_follower, verdict from v_launches where appid = 20")
     assert row and row[0][0] == 900 and float(row[0][1]) == 0.5 and row[0][2] == "on track"
 

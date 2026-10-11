@@ -96,9 +96,10 @@ def apply_details(conn, appid: int, d: dict | None, day: date) -> list[dict]:
               release_date_text = %(release_date_text)s, is_free = %(is_free)s,
               price_cents = coalesce(%(price_cents)s, price_cents),
               developers = %(developers)s, publishers = %(publishers)s, genres = %(genres)s,
-              header_image = %(header_image)s, details_at = now(), skip_reason = null
+              header_image = %(header_image)s, early_access = %(early_access)s, dlc_count = %(dlc_count)s,
+              details_at = now(), skip_reason = null
             where appid = %(appid)s
-        """, {**d, "appid": appid})
+        """, {"early_access": None, "dlc_count": None, **d, "appid": appid})
 
         new_state = page_state(d)
         cur.execute("select state from page_state where appid = %s", (appid,))
@@ -149,15 +150,39 @@ def apply_tags(conn, appid: int, tags: list[str] | None, day: date) -> dict | No
 
 
 def add_news(conn, appid: int, items: list[dict]) -> int:
+    """Developer posts. Typed posts (from Steam's event feed) replace untyped copies of the same post."""
     with conn.cursor() as cur:
-        if items:
-            cur.executemany("""
-                insert into events (appid, start_day, kind, title, url, ext_id)
-                values (%s, %s, 'news', %s, %s, %s)
-                on conflict do nothing
-            """, [(appid, n["day"], n["title"][:300], n["url"], n["gid"]) for n in items])
+        for n in items:
+            cur.execute("""
+                insert into events (appid, start_day, kind, title, url, ext_id, event_type, category)
+                values (%s, %s, 'news', %s, %s, %s, %s, %s)
+                on conflict (coalesce(appid, 0), kind, ext_id) do update set
+                  event_type = coalesce(excluded.event_type, events.event_type),
+                  category = case when excluded.event_type is not null or events.event_type is null
+                                  then excluded.category else events.category end,
+                  title = excluded.title
+            """, (appid, n["day"], n["title"][:300], n.get("url"), n["gid"], n.get("event_type"),
+                  n.get("category") or "news"))
+            if n.get("event_type") is not None:
+                cur.execute("""
+                    delete from events where appid = %s and kind = 'news' and event_type is null
+                      and start_day = %s and title = %s and ext_id <> %s
+                """, (appid, n["day"], n["title"][:300], n["gid"]))
         cur.execute("update apps set news_at = now() where appid = %s", (appid,))
     return len(items)
+
+
+def save_histogram(conn, appid: int, h: dict | None) -> None:
+    """Steam's review history for one game: monthly/weekly since launch, daily for 30 days."""
+    with conn.cursor() as cur:
+        if h is not None:
+            cur.execute("""
+                insert into review_history (appid, rollup_type, rollups, recent, fetched_at)
+                values (%s, %s, %s, %s, now())
+                on conflict (appid) do update set rollup_type = excluded.rollup_type,
+                  rollups = excluded.rollups, recent = excluded.recent, fetched_at = now()
+            """, (appid, h["rollup_type"], Jsonb(h["rollups"]), Jsonb(h["recent"])))
+        cur.execute("update apps set hist_at = now() where appid = %s", (appid,))
 
 
 def add_global_events(conn, events: list[dict]) -> int:
@@ -181,6 +206,21 @@ def demote_stale(conn, day: date) -> int:
               and release_date < %(day)s::date - 180 and last_seen < %(day)s::date - 30
         """, {"day": day})
         return cur.rowcount
+
+
+def refresh_metrics(url: str) -> None:
+    """Rebuild the cached per-game numbers the dashboard reads. Run after every job."""
+    import logging, time
+    log = logging.getLogger("radar")
+    try:
+        with connect(url) as conn:
+            t0 = time.time()
+            conn.execute("select refresh_metrics()")
+            log.info("dashboard cache refreshed in %.1fs", time.time() - t0)
+    except psycopg.errors.UndefinedFunction:
+        log.warning("refresh_metrics() is missing: run the latest db/schema.sql in Supabase's SQL editor")
+    except psycopg.Error as e:
+        log.warning("dashboard cache refresh failed: %s", e)
 
 
 def fetch_ids(conn, sql: str, params: dict | None = None) -> list[int]:

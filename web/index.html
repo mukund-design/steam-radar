@@ -191,6 +191,74 @@ dialog .field { margin-bottom: 12px; }
 dialog .field input { width: 100%; }
 .drow { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
 
+/* ── overview ── */
+.lede { margin: 24px 0 8px; font-size: clamp(19px, 2.3vw, 24px); line-height: 1.42; font-weight: 500; letter-spacing: -.014em; max-width: 66ch; text-wrap: pretty; }
+.lk { all: unset; cursor: pointer; font-weight: 700; border-bottom: 2px solid var(--rule); }
+.lk:hover { border-bottom-color: var(--indigo); }
+.lk:focus-visible { outline: 2px solid var(--indigo); outline-offset: 2px; }
+.ovmeta { color: var(--slate); font-size: 13.5px; margin: 0 0 20px; display: flex; flex-wrap: wrap; gap: 4px 22px; }
+.ovmeta b { color: var(--ink); font-weight: 600; }
+.ovgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; align-items: start; }
+.panel { background: var(--panel); border: 1px solid var(--rule); border-radius: var(--r); padding: 14px 16px 8px; min-width: 0; }
+.panel.wide { grid-column: span 2; }
+.ph3 { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.ph3 h3 { margin: 0; font-size: 15.5px; font-weight: 700; letter-spacing: -.01em; }
+.ph3 button, .linkbtn { border: 0; background: none; color: var(--indigo); cursor: pointer; font-weight: 600; font-size: 13px; padding: 2px 0; white-space: nowrap; }
+.ph3 button:hover, .linkbtn:hover { text-decoration: underline; }
+.psub { margin: 2px 0 8px; color: var(--slate); font-size: 12.5px; }
+.h4 { margin: 12px 0 2px; font-size: 12.5px; font-weight: 600; color: var(--slate); }
+.list { list-style: none; margin: 0; padding: 0; }
+.item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 14px; align-items: center; padding: 9px 4px; border-top: 1px solid var(--rule-soft); cursor: pointer; }
+.item:hover { background: var(--indigo-soft); }
+.item .game { min-width: 0; }
+.item .r { text-align: right; font-size: 14px; display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+.item .r .sub { font-size: 12px; }
+.empty-sm { padding: 18px 4px 14px; color: var(--slate); font-size: 13.5px; border-top: 1px solid var(--rule-soft); }
+.causes { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 12.5px; color: var(--slate); padding-left: 75px; margin-top: -2px; }
+.causes span { display: inline-flex; gap: 6px; align-items: center; }
+.causes svg { flex: none; }
+.gtag { font-weight: 600; }
+.ratio { font-weight: 700; font-size: 15px; }
+.chgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(176px, 1fr)); gap: 10px; padding: 4px 0 8px; }
+.chg { border: 1px solid var(--rule-soft); border-radius: 3px; padding: 8px; cursor: pointer; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.chg:hover { border-color: var(--indigo); }
+.chg .imgs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.chg .imgs.one { grid-template-columns: 1fr; }
+.chg .imgs img, .chg .imgs .ph { width: 100%; height: auto; aspect-ratio: 460 / 215; object-fit: cover; border-radius: 2px; background: var(--rule-soft); }
+.chg b { font-size: 13.5px; line-height: 1.25; }
+.chg small { color: var(--slate); font-size: 12px; line-height: 1.35; display: flex; gap: 6px; align-items: baseline; }
+.rec { display: inline-flex; flex-direction: column; gap: 4px; min-width: 104px; }
+.rec .bar { display: flex; height: 6px; border-radius: 3px; overflow: hidden; background: var(--rule-soft); }
+.rec .bar i { display: block; height: 100%; }
+.rec small { font-size: 12px; color: var(--slate); white-space: nowrap; }
+.tag.link { cursor: pointer; background: none; font: inherit; font-size: 12px; }
+.tag.link:hover { border-color: var(--indigo); color: var(--indigo); }
+.tag.link span { color: var(--slate); margin-left: 3px; }
+.dactions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+.cause { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 13px; white-space: nowrap; }
+.cause i { width: 9px; height: 9px; border-radius: 2px; flex: none; }
+.evid { display: block; color: var(--slate); font-size: 12px; margin-top: 2px; max-width: 38ch; }
+.panel.full { grid-column: 1 / -1; }
+.breakdown { background: var(--panel); border: 1px solid var(--rule); border-radius: var(--r); padding: 12px 14px; margin-bottom: 14px; }
+.breakdown h3 { margin: 0; font-size: 14px; font-weight: 700; }
+.breakdown .bar { display: flex; height: 10px; border-radius: 5px; overflow: hidden; background: var(--rule-soft); margin: 9px 0 10px; }
+.breakdown .bar i { display: block; height: 100%; }
+.lgs { display: flex; flex-wrap: wrap; gap: 6px 8px; }
+.lg { display: inline-flex; gap: 6px; align-items: center; border: 1px solid var(--rule); background: var(--paper); border-radius: 99px; padding: 3px 10px; font-size: 12.5px; cursor: pointer; color: var(--ink); }
+.lg:hover { border-color: var(--indigo); }
+.lg[aria-pressed="true"] { border-color: var(--ink); background: var(--ink); color: var(--panel); }
+.lg i { width: 8px; height: 8px; border-radius: 2px; }
+.badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 0 6px; border-radius: 3px; border: 1px solid var(--rule); color: var(--slate); margin-left: 4px; vertical-align: 1px; white-space: nowrap; }
+.neg { color: var(--bad); font-weight: 600; }
+@media (max-width: 1000px) { .ovgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 660px) {
+  .ovgrid { grid-template-columns: 1fr; }
+  .panel.wide { grid-column: auto; }
+  .causes { padding-left: 0; }
+  .item .thumb { display: none; }
+  .chgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
 @media (max-width: 720px) {
   .finder { grid-template-columns: 1fr 1fr; }
   .finder > :first-child { grid-column: 1 / -1; }
@@ -296,15 +364,21 @@ class LiveSource {
     return out;
   }
   async game(id) {
-    const [app, series, changes, events] = await Promise.all([
+    const [app, series, changes, events, history] = await Promise.all([
       this.q(`v_app_metrics?appid=eq.${id}`).then(r => r[0]),
       this.series([id], 4000).then(s => s[id] || []),
       this.q(`page_changes?appid=eq.${id}&order=day.desc,id.desc`),
       this.q(`events?or=(appid.is.null,appid.eq.${id})&order=start_day`),
+      this.q(`review_history?appid=eq.${id}&select=rollup_type,rollups,recent`).then(r => r[0] || null).catch(() => null),
     ]);
-    return { app, series, changes, events };
+    return { app, series, changes, events, history };
   }
+  surges() { return this.q("v_surges?select=*&order=score.desc&limit=400"); }
+  surgeCauses() { return this.q("v_surge_causes?select=*"); }
   comparablesFor(id, limit = 8) { return this.rpc("comparables_for", { p_appid: id, p_limit: limit }); }
+  overview() { return this.rpc("overview", {}); }
+  genres() { return this.q("v_genres?select=*&limit=2000"); }
+  genreDetail(tag) { return this.rpc("genre_detail", { p_tag: tag }); }
   comparables(tags, priceCents, after, limit = 30) {
     return this.rpc("find_comparables", { p_tags: tags, p_price_cents: priceCents, p_released_after: after, p_limit: limit });
   }
@@ -331,8 +405,11 @@ class DemoSource {
       app: this.byId.get(id), series: this.d.series[id] || [],
       changes: this.d.changes.filter(c => c.appid === id).reverse(),
       events: this.d.events.filter(e => e.appid == null || e.appid === id),
+      history: this.d.history?.[id] || null,
     };
   }
+  surges() { return this.d.surges || { __error: "missing" }; }
+  surgeCauses() { return this.d.surge_causes || []; }
   /* Same scoring as find_comparables() in db/schema.sql */
   comparables(tags, priceCents, after, limit = 30, exclude = null) {
     const w = i => 1 / (1 + 0.15 * i), qi = new Map(tags.map((t, i) => [t, i]));
@@ -351,6 +428,12 @@ class DemoSource {
     }
     return out.sort((x, y) => y.score - x.score || (y.reviews_total || 0) - (x.reviews_total || 0)).slice(0, limit);
   }
+  overview() { return this.d.overview || { __error: "missing" }; }
+  genres() { return this.d.genres || { __error: "missing" }; }
+  genreDetail(tag) {
+    return this.d.genre_details?.[tag] || { tag, summary: (this.d.genres || []).find(g => g.tag === tag) || null,
+      pairs: [], breakouts: [], demos: [], launches: [], quiet: [] };
+  }
   comparablesFor(id, limit = 8) {
     const a = this.byId.get(id);
     return a?.tags?.length ? this.comparables(a.tags.slice(0, 8), a.price_cents, null, limit, id) : [];
@@ -359,15 +442,18 @@ class DemoSource {
 
 /* ══════════════════════════════════════════════════════════════════ state */
 const TABS = [
+  { id: "overview", label: "Overview" },
+  { id: "genres", label: "Genres" },
   { id: "breakouts", label: "Breakouts" },
   { id: "demos", label: "Demo heat" },
   { id: "launches", label: "Launches" },
+  { id: "surges", label: "Surges" },
   { id: "quiet", label: "Quiet earners" },
   { id: "compare", label: "Comparables" },
 ];
 const S = {
-  src: null, tab: "breakouts", data: {}, spark: {}, error: null, lastDay: null,
-  filter: { q: "", tag: "", size: "all", maxReviews: "20000", verdict: "all" },
+  src: null, tab: "overview", data: {}, spark: {}, error: null, lastDay: null,
+  filter: { q: "", tag: "", size: "all", maxReviews: "20000", verdict: "all", gq: "", minGames: "5", cause: "all" },
   sort: {},
   cmp: { tags: ["Cozy", "Building", "Relaxing"], price: "14.99", after: "", rows: null, busy: false },
 };
@@ -397,10 +483,16 @@ async function loadAll() {
   renderChrome(); renderMain();
   if (!S.src) { S.error = "Sample data is missing (demo-data.js) and no database is connected."; renderMain(); return; }
   try {
-    const [b, d, l, q, t, last] = await Promise.all([S.src.breakouts(), S.src.demos(), S.src.launches(), S.src.quiet(), S.src.tags(), S.src.lastDay()]);
-    S.data = { breakouts: b, demos: d, launches: l, quiet: q, tags: t };
+    // Overview and Genres need the newer schema; if it hasn't been run yet, the other tabs still work.
+    const soft = p => Promise.resolve(p).catch(e => ({ __error: e.message }));
+    const [b, d, l, q, t, last, ov, gen, sg, sc] = await Promise.all([S.src.breakouts(), S.src.demos(), S.src.launches(),
+      S.src.quiet(), S.src.tags(), S.src.lastDay(), soft(S.src.overview()), soft(S.src.genres()),
+      soft(S.src.surges()), soft(S.src.surgeCauses())]);
+    S.data = { breakouts: b, demos: d, launches: l, quiet: q, tags: t, overview: ov, genres: gen, surges: sg,
+               surgeCauses: Array.isArray(sc) ? sc : [] };
     S.lastDay = last;
-    const ids = [...b.slice(0, 150).map(r => r.appid), ...d.map(r => r.appid), ...l.map(r => r.appid), ...q.slice(0, 150).map(r => r.appid)];
+    const ids = [...b.slice(0, 150).map(r => r.appid), ...d.map(r => r.appid), ...l.map(r => r.appid), ...q.slice(0, 150).map(r => r.appid),
+                 ...(Array.isArray(sg) ? sg.slice(0, 150).map(r => r.appid) : [])];
     S.spark = await S.src.series([...new Set(ids)], 30);
   } catch (e) {
     S.error = `Couldn't read from the database: ${e.message}. Check the project URL and publishable key, and that db/schema.sql has been run.`;
@@ -418,9 +510,19 @@ function renderChrome() {
       : "Sample data · invented games"}</span>
     <button class="btn ${live ? "" : "primary"}" id="open-connect">${live ? "Database settings" : "Connect your database"}</button>`;
   $("#open-connect").onclick = openConnect;
-  const counts = { breakouts: S.data.breakouts?.length, demos: S.data.demos?.length, launches: S.data.launches?.length, quiet: S.data.quiet?.length };
+  const counts = { breakouts: S.data.breakouts?.length, demos: S.data.demos?.length, launches: S.data.launches?.length, quiet: S.data.quiet?.length,
+                   genres: Array.isArray(S.data.genres) ? S.data.genres.filter(g => g.games >= 5).length : undefined,
+                   surges: Array.isArray(S.data.surges) ? S.data.surges.length : undefined };
   $("#tabs").innerHTML = TABS.map(t => `<button class="tab" role="tab" id="tab-${t.id}" aria-selected="${t.id === S.tab}">${t.label}${counts[t.id] != null ? `<span class="n">${counts[t.id]}</span>` : ""}</button>`).join("");
-  for (const t of TABS) $("#tab-" + t.id).onclick = () => { S.tab = t.id; try { history.replaceState(null, "", "#" + t.id); } catch {} renderChrome(); renderMain(); if (t.id === "compare" && !S.cmp.rows) runCompare(); };
+  for (const t of TABS) $("#tab-" + t.id).onclick = () => goTab(t.id);
+}
+
+function goTab(id) {
+  S.tab = id;
+  try { history.replaceState(null, "", "#" + id); } catch {}
+  renderChrome(); renderMain();
+  window.scrollTo({ top: 0 });
+  if (id === "compare" && !S.cmp.rows) runCompare();
 }
 
 const thumb = (r, cls = "thumb") => r.header_image
@@ -453,6 +555,8 @@ function heatStrip(h) {
 }
 
 const TAB_COPY = {
+  surges: ["Surges", "Released games suddenly picking up reviews (a sign of sales) or players: at least twice their usual week. The likely cause is what happened on Steam from 10 days before. It shows timing, not proof."],
+  genres: ["Genres", "Each game counts under its five main Steam tags. Heat compares how fast a genre's upcoming games gained followers this week with the typical upcoming game: 2× means twice as fast."],
   breakouts: ["Breakouts", "Unreleased games ranked by how fast their followers grew this week, compared with games of a similar size. Growing from 200 to 2,000 outranks 50,000 to 55,000."],
   demos: ["Demo heat", "Demos ranked by this week's peak players against last week's. Next Fest runs 19–26 October 2026."],
   launches: ["Launches", "Games released in the last 90 days. Reviews per pre-launch follower, compared with games launched around the same time, decides beat, on track or miss."],
@@ -488,9 +592,24 @@ function filterBar(extra = "") {
 
 function renderMain() {
   const m = $("#main");
+  const loading = !S.data.breakouts && !S.error;
+  const banner = S.error ? `<div class="banner" role="alert">${esc(S.error)} <button class="btn" id="err-demo">Use sample data</button></div>` : "";
+  if (S.tab === "overview") {
+    m.innerHTML = banner + (loading ? `<div class="tbl-wrap" style="margin-top:22px"><div class="empty">Loading…</div></div>` : S.error ? "" : overviewView());
+    bindMain();
+    return;
+  }
   const [title, blurb] = TAB_COPY[S.tab];
   let body = "", extra = "";
-  const loading = !S.data.breakouts && !S.error;
+
+  if (S.tab === "genres") body = genresView();
+  if (S.tab === "surges") {
+    const present = new Set((Array.isArray(S.data.surges) ? S.data.surges : []).map(r => r.cause));
+    extra = `<div class="field"><label for="f-cause">Likely cause</label><select id="f-cause">
+      <option value="all">Any</option>${Object.entries(CAUSE).filter(([k]) => present.has(k) || S.filter.cause === k)
+        .map(([k, [l]]) => `<option value="${k}" ${S.filter.cause === k ? "selected" : ""}>${l}</option>`).join("")}</select></div>`;
+    body = surgesView();
+  }
 
   if (S.tab === "breakouts") {
     extra = `<div class="field"><label for="f-size">Size</label><select id="f-size">
@@ -561,8 +680,9 @@ function renderMain() {
 
   if (S.tab === "compare") body = compareView();
 
-  m.innerHTML = `<div class="head"><div><h2>${title}</h2><p>${blurb}</p></div>${S.tab === "compare" ? "" : filterBar(extra)}</div>
-    ${S.error ? `<div class="banner" role="alert">${esc(S.error)} <button class="btn" id="err-demo">Use sample data</button></div>` : ""}
+  const filters = S.tab === "compare" ? "" : S.tab === "genres" ? genreFilterBar() : filterBar(extra);
+  m.innerHTML = `<div class="head"><div><h2>${title}</h2><p>${blurb}</p></div>${filters}</div>
+    ${banner}
     ${loading ? `<div class="tbl-wrap"><div class="empty">Loading…</div></div>` : body}`;
   bindMain();
 }
@@ -632,11 +752,11 @@ function bindMain() {
   on("f-verdict", "change", e => { S.filter.verdict = e.target.value; renderMain(); });
   on("err-demo", "click", async () => { store.del("conn"); await useDemo(); loadAll(); });
   m.querySelectorAll("[data-sort]").forEach(b => b.onclick = () => { const [t, k] = b.dataset.sort.split(":"); S.sort[t] = k; renderMain(); });
-  m.querySelectorAll("tr.row").forEach(tr => {
-    const open = () => openGame(+(S.tab === "demos" && tr.dataset.parent ? tr.dataset.parent : tr.dataset.app));
-    tr.onclick = open;
-    tr.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } };
-  });
+  on("f-gq", "input", keepFocus("f-gq", e => { S.filter.gq = e.target.value; renderMain(); }));
+  on("f-min", "change", e => { S.filter.minGames = e.target.value; renderMain(); });
+  on("f-cause", "change", e => { S.filter.cause = e.target.value; renderMain(); });
+  m.querySelectorAll("[data-cause]").forEach(b => b.onclick = () => {
+    S.filter.cause = S.filter.cause === b.dataset.cause ? "all" : b.dataset.cause; renderMain(); });
   // comparable finder
   const addTag = v => { v = v.trim(); if (v && !S.cmp.tags.includes(v)) { S.cmp.tags.push(v); S.cmp.rows = null; renderMain(); runCompare(); $("#cmp-tag")?.focus(); } };
   on("cmp-form", "submit", e => e.preventDefault());
@@ -650,33 +770,356 @@ function bindMain() {
   on("cmp-after", "change", e => { S.cmp.after = e.target.value; runCompare(); });
 }
 
+/* ════════════════════════════════════════════════════════════════ surges */
+const CAUSE = {
+  release:      ["Left Early Access / 1.0", "--good",   "a 1.0 launch"],
+  dlc:          ["New DLC",                 "--t1",     "new DLC"],
+  major_update: ["Major update",            "--indigo", "a major update"],
+  free_weekend: ["Free weekend",            "--t5",     "a free weekend"],
+  sale:         ["Discount",                "--t4",     "a discount"],
+  steam_sale:   ["Steam sale",              "--t4",     "a Steam sale"],
+  update:       ["Update",                  "--t0",     "an update"],
+  page:         ["Store page change",       "--t2",     "a store page change"],
+  fest:         ["Steam fest",              "--t2",     "a Steam fest"],
+  patch:        ["Patch",                   "--slate",  "a patch"],
+  backlash:     ["Mostly negative reviews", "--bad",    "a wave of negative reviews"],
+  none:         ["Nothing on Steam",        "--rule",   "nothing visible on Steam"],
+};
+const POST = { release: "1.0 / release", major_update: "Major update", update: "Update", patch: "Patch", dlc: "DLC",
+  sale: "Sale", free_weekend: "Free weekend", announcement: "Announcement", stream: "Stream",
+  in_game_event: "In-game event", crosspost: "Cross-post", news: "Post" };
+const causePill = c => { const [l, col] = CAUSE[c] || [c, "--slate"]; return `<span class="cause"><i style="background:var(${col})"></i>${esc(l)}</span>`; };
+const evidence = (causes, n = 2) => (causes || []).slice(0, n).map(e => `<span class="evid">${esc((e.detail || "").slice(0, 60))}, ${fmtDay(e.day)}</span>`).join("");
+const ratioText = r => r.ratio != null ? `${r.ratio >= 10 ? Math.round(r.ratio) : r.ratio.toFixed(1)}×` : r.kind === "players" ? "–" : "from ~0";
+
+function surgeBreakdown() {
+  const rows = S.data.surgeCauses || [], total = rows.reduce((a, r) => a + r.surges, 0);
+  if (!total) return "";
+  return `<div class="breakdown"><h3>What came before surges, last 30 days</h3>
+    <div class="bar">${rows.map(r => `<i style="width:${(r.surges / total * 100).toFixed(2)}%;background:var(${(CAUSE[r.cause] || [0, "--slate"])[1]})" title="${esc((CAUSE[r.cause] || [r.cause])[0])}: ${r.surges}"></i>`).join("")}</div>
+    <div class="lgs">${rows.map(r => `<button class="lg" data-cause="${esc(r.cause)}" aria-pressed="${S.filter.cause === r.cause}">
+      <i style="background:var(${(CAUSE[r.cause] || [0, "--slate"])[1]})"></i>${esc((CAUSE[r.cause] || [r.cause])[0])} <b>${r.surges}</b> <span>${Math.round(r.surges / total * 100)}%</span></button>`).join("")}</div></div>`;
+}
+
+function surgesView() {
+  const all = S.data.surges;
+  if (all?.__error) return `<div class="tbl-wrap">${needSchema}</div>`;
+  let rows = applyFilters(all || []);
+  if (S.filter.cause !== "all") rows = rows.filter(r => r.cause === S.filter.cause);
+  rows = sorted("surges", rows, "score");
+  return surgeBreakdown() + table(rows, `<th>Game</th>${sortTh("surges", "week_reviews", "Reviews this week")}${sortTh("surges", "ratio", "vs usual")}
+      ${sortTh("surges", "peak_7d", "Peak players")}<th class="num">Positive</th><th>Likely cause</th>`,
+    r => `<td>${gameCell(r, `${r.release_date ? ` · ${new Date(toMs(r.release_date)).getUTCFullYear()}` : ""}${r.early_access ? ` <span class="badge">Early Access</span>` : ""}`)}</td>
+      <td class="num">${r.week_reviews != null ? `<b>+${num(r.week_reviews)}</b><span class="sub">usually ${r.usual_week >= 1 ? num(r.usual_week) : "under 1"} a week</span>` : "–"}</td>
+      <td class="num"><b class="${r.ratio != null || r.kind !== "players" ? "up" : ""}">${ratioText(r)}</b></td>
+      <td class="num">${num(r.peak_7d)}${r.player_ratio != null ? `<span class="sub ${r.player_ratio >= 1.5 ? "up" : ""}">${r.player_ratio.toFixed(1)}× last week</span>` : ""}</td>
+      <td class="num">${r.week_pos != null ? `<span class="${r.cause === "backlash" ? "neg" : ""}">${pct(r.week_pos)}</span><span class="sub">usually ${pct(r.usual_pos)}</span>` : "–"}</td>
+      <td>${causePill(r.cause)}${evidence(r.causes)}</td>`,
+    "No released game is surging right now. Surges show once review history has been collected, from the first daily run after this update.");
+}
+
+/* ═══════════════════════════════════════════════════════ overview + genres */
+const signedPct = v => v == null ? "–" : (v >= 0 ? "+" : "−") + Math.abs(v * 100).toFixed(Math.abs(v) < 0.1 ? 1 : 0) + "%";
+const addDays = (d, n) => isoDay(toMs(d) + n * DAY);
+function fmtRange(s, e) {
+  const a = new Date(toMs(s)), b = new Date(toMs(e || s));
+  const mon = d => d.toLocaleDateString("en-GB", { month: "short", timeZone: "UTC" });
+  if (!e || s === e) return fmtDay(s);
+  return a.getUTCMonth() === b.getUTCMonth() ? `${a.getUTCDate()}–${b.getUTCDate()} ${mon(b)}` : `${fmtDay(s)} – ${fmtDay(e)}`;
+}
+const genreSet = () => new Set(Array.isArray(S.data.genres) ? S.data.genres.map(g => g.tag) : []);
+const tagChip = t => genreSet().has(t)
+  ? `<button class="tag link" data-genre="${esc(t)}" title="Open the ${esc(t)} genre">${esc(t)}</button>`
+  : `<span class="tag">${esc(t)}</span>`;
+const gameLink = (id, name) => `<button class="lk" data-app="${id}">${esc(name)}</button>`;
+const genreLink = t => `<button class="lk" data-genre="${esc(t)}">${esc(t)}</button>`;
+
+/* Heat for a genre: how many times faster than the typical upcoming game. 0.5× → 0 cells, 3× → 12. */
+function genreHeat(v) {
+  if (v == null) return `<span class="muted" title="Needs 3+ upcoming games with a week of follower history">–</span>`;
+  const lit = Math.max(0, Math.min(12, Math.round((v - 0.5) * 4.8)));
+  return `<span class="heat" title="Upcoming games in this genre gained followers ${v}× as fast as the typical upcoming game this week">
+    <span class="cells">${RAMP.map((c, i) => `<i style="${i < lit ? `background:var(${c})` : ""}"></i>`).join("")}</span><b>${v.toFixed(1)}×</b></span>`;
+}
+function record(b, t, m) {
+  const n = (b || 0) + (t || 0) + (m || 0);
+  if (!n) return `<span class="muted">–</span>`;
+  const w = x => (x / n * 100).toFixed(1) + "%";
+  return `<span class="rec" title="${b} beat, ${t} on track, ${m} missed"><span class="bar"><i style="width:${w(b)};background:var(--good)"></i><i style="width:${w(t)};background:var(--indigo);opacity:.45"></i><i style="width:${w(m)};background:var(--bad)"></i></span>
+    <small>${b} beat · ${m} missed</small></span>`;
+}
+const verdictPill = v => `<span class="pill ${v === "beat" ? "beat" : v === "miss" ? "miss" : v === "on track" ? "track" : "none"}">${esc(v === "no pre-launch data" ? "no baseline" : v)}</span>`;
+const panel = (title, sub, body, goto, gotoLabel, wide) => `<section class="panel${wide === "full" ? " full" : wide ? " wide" : ""}">
+  <div class="ph3"><h3>${title}</h3>${goto ? `<button data-goto="${goto}">${gotoLabel}</button>` : ""}</div>
+  ${sub ? `<p class="psub">${sub}</p>` : ""}${body}</section>`;
+const item = (attrs, left, right, extra = "") => `<li class="item" tabindex="0" ${attrs}>${left}<div class="r">${right}</div>${extra}</li>`;
+const needSchema = `<div class="empty-sm">This needs the latest database update. In Supabase, open SQL Editor, run the newest <b>db/schema.sql</b>, then reload this page.</div>`;
+
+function causeChip(c) {
+  if (c.kind === "news") {
+    const t = (c.title || "Update").length > 52 ? c.title.slice(0, 50) + "…" : c.title;
+    const label = c.category && c.category !== "news" ? (POST[c.category] || "Post") + ": " : "Posted ";
+    return `<span><svg width="10" height="10" aria-hidden="true"><circle cx="5" cy="5" r="3.6" fill="var(--panel)" stroke="var(--indigo)" stroke-width="2"/></svg>${esc(label)}“${esc(t)}”, ${fmtDay(c.day)}</span>`;
+  }
+  const [label, color] = FIELD[c.kind] || [c.kind, "--slate"];
+  const what = c.kind === "tags" ? `Tags${c.new_value ? " +" + c.new_value : ""}${c.old_value ? " −" + c.old_value : ""}`
+    : c.kind === "discount" ? `Discount ${c.new_value}` : c.kind === "trailers" ? (c.new_value || "Trailers changed")
+    : c.kind === "price" ? `Price ${c.old_value} → ${c.new_value}` : label + " changed";
+  return `<span><svg width="9" height="9" aria-hidden="true"><path d="M4.5 0 L9 4.5 L4.5 9 L0 4.5Z" fill="var(${color})"/></svg>${esc(what)}, ${fmtDay(c.day)}</span>`;
+}
+
+function overviewView() {
+  const ov = S.data.overview;
+  if (!ov || ov.__error) return `<div class="panel" style="margin-top:22px">${needSchema}</div>`;
+  const c = ov.counts || {};
+  const firstWeek = ov.first_day ? addDays(ov.first_day, 7) : null;
+  const historyReady = firstWeek && (ov.as_of || "") >= firstWeek;
+
+  // the digest in a few sentences
+  const parts = [];
+  const top = ov.breakouts?.[0];
+  if (c.breakouts && top) parts.push(`${c.breakouts} upcoming ${c.breakouts === 1 ? "game is" : "games are"} breaking out, led by ${gameLink(top.appid, top.name)} with ${signed(top.followers_gain)} followers this week.`);
+  else if (top) parts.push(`${gameLink(top.appid, top.name)} is gaining followers fastest for its size, ${signed(top.followers_gain)} this week.`);
+  else parts.push(historyReady ? "No upcoming game is far ahead of its peers this week." : `Breakouts start once there is a week of follower history, around ${fmtDay(firstWeek || ov.as_of)}.`);
+  const hd = ov.demos?.find(d => d.week_ratio != null);
+  if (c.hot_demos && hd) parts.push(`${c.hot_demos} ${c.hot_demos === 1 ? "demo is" : "demos are"} heating up, ${gameLink(hd.parent_appid, hd.name)} fastest at ${hd.week_ratio.toFixed(1)}× last week's players.`);
+  if (c.judged) parts.push(`Of ${c.judged} launches this month with a baseline, ${c.beat} beat expectations and ${c.miss} missed.`);
+  if (c.surges) {
+    const top = (ov.surge_causes || []).filter(x => x.cause !== "none" && x.cause !== "backlash")[0];
+    const total = (ov.surge_causes || []).reduce((a, x) => a + x.surges, 0);
+    parts.push(`${c.surges} released ${c.surges === 1 ? "game is" : "games are"} surging${top
+      ? `; over the last 30 days the most common trigger was ${(CAUSE[top.cause] || [0, 0, top.cause])[2]} (${top.surges} of ${total})` : ""}.`);
+  }
+  const g = ov.genres_up?.[0];
+  if (g) parts.push(`${genreLink(g.tag)} games are gaining followers fastest, ${g.growth_vs_all.toFixed(1)}× the typical rate.`);
+
+  const now = ov.event_now, soon = (ov.events_soon || []).filter(e => e.title !== now?.title);
+  const meta = [
+    `<span>Snapshot <b>${ov.as_of ? fmtDay(ov.as_of, true) : "–"}</b></span>`,
+    `<span><b>${num(ov.tracked)}</b> games watched daily</span>`,
+    now ? `<span><b>${esc(now.title)}</b> is on until ${fmtDay(now.end_day || now.start_day)}</span>` : "",
+    soon.length ? `<span>Coming up: ${soon.map(e => `<b>${esc(e.title)}</b> ${fmtRange(e.start_day, e.end_day)}`).join(", ")}</span>` : "",
+  ].join("");
+
+  // panels
+  const bo = ov.breakouts || [];
+  const breakouts = bo.length ? `<ul class="list">${bo.map(r => item(`data-app="${r.appid}"`,
+      gameCell(r, r.release_date_text ? ` · ${esc(r.release_date_text)}` : ""),
+      `<span><b class="up">${signed(r.followers_gain)}</b> <span class="sub" style="display:inline">${r.followers_7d ? signedPct((r.followers - r.followers_7d) / r.followers_7d) : ""}</span></span>${heatStrip(r.heat)}`,
+      `<div class="causes">${r.causes?.length ? r.causes.map(causeChip).join("")
+        : "<span>Nothing changed on Steam in the two weeks before. Look for a video, stream or post on YouTube, TikTok or Reddit.</span>"}</div>`)).join("")}</ul>`
+    : `<div class="empty-sm">${historyReady ? "No upcoming game is far ahead of its peers this week." : `Breakouts need a week of follower history. First results around ${fmtDay(firstWeek || ov.as_of)}.`}</div>`;
+
+  const gUp = ov.genres_up || [], gDown = ov.genres_down || [];
+  const genreItem = x => item(`data-genre="${esc(x.tag)}"`, `<div><div class="gtag">${esc(x.tag)}</div><div class="gmeta">${x.up_n} upcoming${x.breakouts ? `, ${x.breakouts} breaking out` : ""}</div></div>`,
+    `${genreHeat(x.growth_vs_all)}<span class="sub">${signedPct(x.growth_median)} followers</span>`);
+  const genres = gUp.length ? `<ul class="list">${gUp.map(genreItem).join("")}</ul>
+      ${gDown.length ? `<p class="h4">Cooling</p><ul class="list">${gDown.map(genreItem).join("")}</ul>` : ""}`
+    : `<div class="empty-sm">Genre trends need a week of follower history${firstWeek && !historyReady ? `, from about ${fmtDay(firstWeek)}` : ""}.</div>`;
+
+  const dm = ov.demos || [];
+  const demos = dm.length ? `<ul class="list">${dm.map(r => item(`data-app="${r.parent_appid}"`, gameCell({ ...r, developers: [] }, " · demo"),
+      `${r.week_ratio == null ? `<span class="muted">new</span>` : `<span class="ratio ${r.week_ratio >= 1.15 ? "up" : r.week_ratio <= .85 ? "down" : ""}">${r.week_ratio.toFixed(1)}×</span>`}<span class="sub">${num(r.peak_7d)} peak</span>`)).join("")}</ul>`
+    : `<div class="empty-sm">No demo has reached 20 players yet.</div>`;
+
+  const ln = ov.launches || [];
+  const launches = ln.length ? `<ul class="list">${ln.map(r => item(`data-app="${r.appid}"`, gameCell({ ...r, developers: [] }, ` · day ${r.days_live}`),
+      `${verdictPill(r.verdict)}<span class="sub">${num(r.reviews_total)} reviews</span>`)).join("")}</ul>`
+    : `<div class="empty-sm">No watched game launched in the last two weeks.</div>`;
+
+  const nl = ov.new_on_list || [];
+  const newList = nl.length ? `<ul class="list">${nl.map(r => item(`data-app="${r.appid}"`, gameCell({ ...r, developers: [] }),
+      `<b>#${num(r.wishlist_rank)}</b><span class="sub">${num(r.followers)} followers</span>`)).join("")}</ul>`
+    : `<div class="empty-sm">${historyReady ? "No new entries this week." : "New entries show once there is a week of rank history."}</div>`;
+
+  const ch = ov.changes || [];
+  const capsule = x => /^https?:/.test(x || "") ? `<img src="${esc(x)}" alt="" loading="lazy">` : null;
+  const changes = ch.length ? `<div class="chgrid">${ch.map(r => {
+      const [label, color] = FIELD[r.field] || [r.field, "--slate"];
+      const before = r.field === "capsule" ? capsule(r.old_value) : null, after = r.field === "capsule" ? capsule(r.new_value) : null;
+      const imgs = before && after ? `<div class="imgs">${before}${after}</div>` : `<div class="imgs one">${after || thumb(r, "x")}</div>`;
+      const what = r.field === "tags" ? [r.new_value && "+" + r.new_value, r.old_value && "−" + r.old_value].filter(Boolean).join(" ")
+        : r.field === "capsule" ? (before && after ? "Before and after" : "New capsule art") : r.field === "short_description" ? "New description" : (r.new_value || "");
+      return `<div class="chg" tabindex="0" data-app="${r.appid}">${imgs}<b>${esc(r.name)}</b>
+        <small><svg width="9" height="9" aria-hidden="true"><path d="M4.5 0 L9 4.5 L4.5 9 L0 4.5Z" fill="var(${color})"/></svg><span>${esc(label)}, ${fmtDay(r.day)}${what ? `: ${esc(what.slice(0, 60))}` : ""}</span></small></div>`;
+    }).join("")}</div>`
+    : `<div class="empty-sm">No changes yet. Changes are found from each page's second daily check onward.</div>`;
+
+  const sg = ov.surges;
+  const surges = !sg ? needSchema : sg.length ? `<ul class="list">${sg.map(r => item(`data-app="${r.appid}"`,
+      gameCell({ ...r, developers: [] }, r.release_date ? ` · ${new Date(toMs(r.release_date)).getUTCFullYear()}` : ""),
+      r.week_reviews != null && r.kind !== "players"
+        ? `<span><b class="up">+${num(r.week_reviews)}</b> <span class="sub" style="display:inline">reviews</span></span><span class="sub">${ratioText(r)} usual</span>`
+        : `<span><b class="up">${r.player_ratio?.toFixed(1)}×</b> <span class="sub" style="display:inline">players</span></span><span class="sub">${num(r.peak_7d)} peak</span>`,
+      `<div class="causes">${causePill(r.cause)}${(r.causes || []).slice(0, 2).map(e => `<span>${esc((e.detail || "").slice(0, 48))}, ${fmtDay(e.day)}</span>`).join("")}</div>`)).join("")}</ul>`
+    : `<div class="empty-sm">No released game is surging right now.</div>`;
+
+  const qe = ov.quiet || [];
+  const quiet = qe.length ? `<ul class="list">${qe.map(r => {
+      const win = r.reviews_last_30d != null ? [r.reviews_last_30d, "30 days"] : r.reviews_last_7d != null ? [r.reviews_last_7d, "7 days"] : null;
+      return item(`data-app="${r.appid}"`, gameCell({ ...r, developers: [] }, r.release_date ? ` · ${new Date(toMs(r.release_date)).getUTCFullYear()}` : ""),
+        win ? `<b>+${num(win[0])}</b><span class="sub">reviews, ${win[1]}</span>` : `<b>${num(r.reviews_total)}</b><span class="sub">reviews</span>`);
+    }).join("")}</ul>`
+    : `<div class="empty-sm">Quiet earners appear after the monthly seed and the Sunday sweep.</div>`;
+
+  return `<p class="lede">${parts.join(" ")}</p><div class="ovmeta">${meta}</div>
+    <div class="ovgrid">
+      ${panel("Breaking out", "Upcoming games gaining followers fastest for their size, and what changed on Steam in the two weeks before.", breakouts, "breakouts", "All breakouts", true)}
+      ${panel("Genres heating up", "Follower growth of each genre's upcoming games this week, against the typical upcoming game.", genres, "genres", "All genres")}
+      ${panel("Surging now", "Released games picking up far more reviews or players than usual, and the likely trigger.", surges, "surges", "All surges", true)}
+      ${panel("Demos heating up", "Peak players this week against last week.", demos, "demos", "All demos")}
+      ${panel("Launches, last two weeks", "Reviews per pre-launch follower, against games launched at the same time.", launches, "launches", "All launches")}
+      ${panel("New on the wishlist chart", "Upcoming games that entered Steam's most-wishlisted list this week.", newList, "breakouts", "Breakouts")}
+      ${panel("Quiet earners still selling", "Older games picking up the most reviews.", quiet, "quiet", "All quiet earners")}
+      ${panel("Store page changes this week", "Capsule art, trailers, tags and names that changed on watched games, hottest games first.", changes, null, null, "full")}
+    </div>`;
+}
+
+function genreFilterBar() {
+  return `<div class="filters">
+    <div class="field"><label for="f-gq">Find a genre</label><input id="f-gq" type="search" placeholder="e.g. Roguelike" value="${esc(S.filter.gq)}"></div>
+    <div class="field"><label for="f-min">Games tracked</label><select id="f-min">
+      ${[["5", "5 or more"], ["10", "10 or more"], ["25", "25 or more"], ["50", "50 or more"]].map(([v, l]) => `<option value="${v}" ${S.filter.minGames === v ? "selected" : ""}>${l}</option>`).join("")}</select></div></div>`;
+}
+
+function genresView() {
+  const all = S.data.genres;
+  if (all?.__error) return `<div class="tbl-wrap">${needSchema}</div>`;
+  const q = S.filter.gq.trim().toLowerCase(), min = +S.filter.minGames;
+  let rows = (all || []).filter(g => g.games >= min && (!q || g.tag.toLowerCase().includes(q)));
+  rows = [...rows].sort((a, b) => b.games - a.games);           // ties fall back to the biggest genres
+  rows = sorted("genres", rows, "growth_vs_all");
+  if (!rows.length) return `<div class="tbl-wrap"><div class="empty">${q ? "No genre matches that search." : "No genres yet. They appear once games have tags, within a day of the first run."}</div></div>`;
+  return `<div class="tbl-wrap"><table><thead><tr><th>Genre</th>
+      ${sortTh("genres", "growth_vs_all", "Heat vs typical", "", "growth_vs_all")}
+      ${sortTh("genres", "breakouts", "Breaking out")}
+      ${sortTh("genres", "hot_demos", "Hot demos")}
+      ${sortTh("genres", "beat", "Launches, 90 days", "")}
+      ${sortTh("genres", "surges", "Surging")}
+      ${sortTh("genres", "reviews_week", "Reviews this week")}
+      ${sortTh("genres", "quiet_earners", "Quiet earners")}</tr></thead><tbody>
+    ${rows.map(g => `<tr class="row" tabindex="0" data-genre="${esc(g.tag)}">
+      <td><div class="gname">${esc(g.tag)}</div><div class="gmeta">${num(g.games)} games, ${num(g.upcoming)} upcoming</div></td>
+      <td>${genreHeat(g.growth_vs_all)}<span class="sub">${g.growth_median != null ? signedPct(g.growth_median) + " followers, median" : `${g.up_n} with a week of data`}</span></td>
+      <td class="num"><b>${num(g.breakouts)}</b><span class="sub">of ${num(g.up_n)}</span></td>
+      <td class="num"><b>${num(g.hot_demos)}</b><span class="sub">${g.demos ? `of ${num(g.demos)} demos` : "no demos"}</span></td>
+      <td>${record(g.beat, g.on_track, g.miss)}</td>
+      <td class="num">${g.surges == null ? "–" : `<b>${num(g.surges)}</b><span class="sub">of ${num(g.released)} released</span>`}</td>
+      <td class="num"><b>${num(g.reviews_week)}</b><span class="sub">${num(g.released)} released</span></td>
+      <td class="num">${num(g.quiet_earners)}</td></tr>`).join("")}</tbody></table></div>`;
+}
+
+async function openGenre(tag) {
+  const { el, close } = openDrawer("Genre details");
+  try { drawGenre(el, await S.src.genreDetail(tag), close); }
+  catch (e) { el.innerHTML = `<div class="dtop"><span></span><button class="close" id="d-close" aria-label="Close">×</button></div><div class="empty">${esc(e.message)}</div>`; $("#d-close").onclick = close; }
+}
+
+function drawGenre(el, g, close) {
+  const s = g.summary || {};
+  const stats = [
+    ["Upcoming, follower growth", s.growth_median != null ? signedPct(s.growth_median) : "–", s.growth_vs_all != null ? `<em class="muted">${s.growth_vs_all.toFixed(1)}× typical</em>` : `<em class="muted">needs a week of data</em>`],
+    ["Breaking out", num(s.breakouts ?? 0), `<em class="muted">of ${num(s.up_n ?? 0)} upcoming</em>`],
+    ["Hot demos", num(s.hot_demos ?? 0), `<em class="muted">of ${num(s.demos ?? 0)} demos</em>`],
+    ["Launches, 90 days", `${s.beat ?? 0} beat`, `<em class="muted">${s.on_track ?? 0} on track, ${s.miss ?? 0} missed</em>`],
+    ["Reviews this week", num(s.reviews_week), `<em class="muted">${num(s.released ?? 0)} released games</em>`],
+    ["Surging now", num(s.surges ?? 0), `<em class="muted">released games</em>`],
+    ["Quiet earners", num(s.quiet_earners ?? 0), ""],
+  ];
+  const sec = (title, rows, head, rowFn, empty) => `<div class="dh"><span>${title}</span></div>` + (rows?.length
+    ? `<div class="tbl-wrap"><table><thead><tr>${head}</tr></thead><tbody>${rows.map(r => `<tr class="row" tabindex="0" data-app="${r.parent_appid ?? r.appid}">${rowFn(r)}</tr>`).join("")}</tbody></table></div>`
+    : `<p class="muted" style="margin:0">${empty}</p>`);
+  el.innerHTML = `
+    <div class="dtop"><span class="muted" style="font-size:13px">Genre</span><button class="close" id="d-close" aria-label="Close">×</button></div>
+    <h2 class="dname">${esc(g.tag)}</h2>
+    <p class="dmeta">${num(s.games ?? 0)} games tracked: ${num(s.upcoming ?? 0)} upcoming, ${num(s.released ?? 0)} released</p>
+    ${g.pairs?.length ? `<div class="tags" aria-label="Often paired with">${g.pairs.map(p => `<button class="tag link" data-genre="${esc(p.tag)}" title="${p.games} games are tagged both">${esc(p.tag)}<span>${p.games}</span></button>`).join("")}</div>
+      <p class="muted" style="font-size:12.5px;margin:6px 0 0">Often paired with, by number of games sharing both tags.</p>` : ""}
+    <div class="stats">${stats.map(([l, v, x]) => `<div class="stat"><span>${l}</span><b>${v}</b>${x}</div>`).join("")}</div>
+    ${sec("Breaking out", g.breakouts, `<th>Game</th><th class="num">Followers</th><th class="num">This week</th><th>Heat</th>`,
+      r => `<td>${gameCell({ ...r, tags: [] }, r.release_date_text ? ` · ${esc(r.release_date_text)}` : "")}</td><td class="num">${num(r.followers)}</td>
+        <td class="num"><span class="${r.followers_gain > 0 ? "up" : ""}">${signed(r.followers_gain)}</span></td><td>${heatStrip(r.heat)}</td>`,
+      "No upcoming games in this genre have a week of follower history yet.")}
+    ${sec("Demos", g.demos, `<th>Game</th><th class="num">Peak players, 7 days</th><th class="num">vs last week</th>`,
+      r => `<td>${gameCell({ ...r, tags: [] }, " · demo")}</td><td class="num">${num(r.peak_7d)}</td>
+        <td class="num">${r.week_ratio == null ? `<span class="muted">new</span>` : `<span class="${r.week_ratio >= 1.15 ? "up" : r.week_ratio <= .85 ? "down" : ""}">${r.week_ratio.toFixed(2)}×</span>`}</td>`,
+      "No demos in this genre have player counts yet.")}
+    ${sec("Recent launches", g.launches, `<th>Game</th><th>Released</th><th class="num">Reviews</th><th>Result</th>`,
+      r => `<td>${gameCell({ ...r, tags: [] })}</td><td>${fmtDay(r.release_date)}</td>
+        <td class="num">${num(r.reviews_total)}<span class="sub">${pct(r.pct_positive)} positive</span></td><td>${verdictPill(r.verdict)}</td>`,
+      "No games in this genre launched in the last 90 days.")}
+    ${sec("Surging now", g.surges, `<th>Game</th><th class="num">Reviews this week</th><th class="num">vs usual</th><th>Likely cause</th>`,
+      r => `<td>${gameCell({ ...r, tags: [] })}</td><td class="num">${r.week_reviews != null ? "+" + num(r.week_reviews) : "–"}</td>
+        <td class="num"><span class="up">${ratioText(r)}</span></td><td>${causePill(r.cause)}${evidence(r.causes, 1)}</td>`,
+      "No game in this genre is surging right now.")}
+    ${sec("Quiet earners", g.quiet, `<th>Game</th><th class="num">Reviews</th><th class="num">Last 30 days</th><th class="num">Est. net</th>`,
+      r => `<td>${gameCell({ ...r, tags: [] }, r.release_date ? ` · ${new Date(toMs(r.release_date)).getUTCFullYear()}` : "")}</td>
+        <td class="num">${num(r.reviews_total)}</td><td class="num">${r.reviews_last_30d == null ? "–" : "+" + num(r.reviews_last_30d)}</td><td class="num">${money(r.est_net_usd)}</td>`,
+      "No quiet earners in this genre yet.")}
+    <div class="dactions"><button class="btn" id="g-compare">Compare games in this genre</button></div>`;
+  $("#d-close").onclick = close;
+  $("#g-compare").onclick = () => {
+    S.cmp.tags = [g.tag]; S.cmp.price = ""; S.cmp.rows = null;
+    close(); goTab("compare");
+  };
+}
+
+/* One click handler for every game, genre and "see all" link on the page and in the side panel. */
+function activate(el) {
+  if (el.dataset.goto) return goTab(el.dataset.goto);
+  if (el.dataset.genre) return openGenre(el.dataset.genre);
+  if (el.dataset.app) openGame(+(S.tab === "demos" && el.dataset.parent && el.closest("#main") ? el.dataset.parent : el.dataset.app));
+}
+for (const host of [$("#main"), $("#drawer-root")]) {
+  host.addEventListener("click", e => {
+    const el = e.target.closest("[data-goto], [data-genre], [data-app]");
+    if (el && host.contains(el)) activate(el);
+  });
+  host.addEventListener("keydown", e => {
+    if ((e.key === "Enter" || e.key === " ") && e.target.matches("[data-goto], [data-genre], [data-app]") && e.target.tagName !== "BUTTON") {
+      e.preventDefault(); activate(e.target);
+    }
+  });
+}
+
 /* ═════════════════════════════════════════════════════════════ game panel */
 const FIELD = {
   capsule: ["Capsule art", "--t4"], trailers: ["Trailers", "--t4"], screenshots: ["Screenshots", "--t4"],
   name: ["Name", "--t2"], short_description: ["Description", "--t2"], tags: ["Tags", "--t2"], genres: ["Genres", "--t2"],
   price: ["Price", "--good"], discount: ["Discount", "--good"],
   release_date: ["Release date", "--slate"], coming_soon: ["Release status", "--slate"],
+  early_access: ["Early Access", "--indigo"], dlc: ["DLC", "--indigo"],
 };
 const METRICS = [
   { key: 1, label: "Followers" }, { key: 2, label: "Reviews" }, { key: 3, label: "Players" }, { key: 4, label: "Wishlist rank", invert: true },
+  { key: "hist", label: "Since launch" },
 ];
 let G = null;   // open game
 
-async function openGame(id) {
+let DR = null;  // open side panel
+function openDrawer(label) {
   const root = $("#drawer-root");
-  const lastFocus = document.activeElement;
-  root.innerHTML = `<div class="scrim" id="scrim"></div><aside class="drawer" role="dialog" aria-modal="true" aria-label="Game details" id="drawer" tabindex="-1"><div class="empty">Loading…</div></aside>`;
-  const close = () => { root.innerHTML = ""; G = null; document.removeEventListener("keydown", onKey); lastFocus?.focus?.(); };
+  const lastFocus = DR ? DR.lastFocus : document.activeElement;
+  if (DR) document.removeEventListener("keydown", DR.onKey);
+  root.innerHTML = `<div class="scrim" id="scrim"></div><aside class="drawer" role="dialog" aria-modal="true" aria-label="${esc(label)}" id="drawer" tabindex="-1"><div class="empty">Loading…</div></aside>`;
+  const close = () => { root.innerHTML = ""; G = null; document.removeEventListener("keydown", onKey); DR = null; lastFocus?.focus?.(); };
   const onKey = e => { if (e.key === "Escape") close(); };
   document.addEventListener("keydown", onKey);
   $("#scrim").onclick = close;
   $("#drawer").focus();
+  DR = { close, onKey, lastFocus };
+  return { el: $("#drawer"), close };
+}
+
+async function openGame(id) {
+  const { close } = openDrawer("Game details");
   try {
     const g = await S.src.game(id);
     if (!g.app) throw new Error("This game is not in the database.");
     const comps = await Promise.resolve(S.src.comparablesFor(id, 6)).catch(() => []);
     const has = k => g.series.some(r => r[k] != null);
-    const metric = g.app.coming_soon ? 1 : has(2) ? 2 : has(3) ? 3 : 1;
+    const daily = g.series.filter(r => r[2] != null).length >= 10;
+    const metric = g.app.coming_soon ? 1 : (!daily && g.history?.rollups?.length > 1) ? "hist" : has(2) ? 2 : has(3) ? 3 : 1;
     G = { ...g, comps, metric, close };
     drawGame();
   } catch (e) {
@@ -698,14 +1141,14 @@ function drawGame() {
     ["Est. net revenue", a.coming_soon || a.is_free ? "–" : money(a.est_net_usd), ""],
     ["Price", price(a.price_cents), ""],
   ];
-  const available = METRICS.filter(m => series.some(r => r[m.key] != null));
+  const available = METRICS.filter(m => m.key === "hist" ? G.history?.rollups?.length > 1 : series.some(r => r[m.key] != null));
   d.innerHTML = `
     <div class="dtop"><span class="muted" style="font-size:13px">${a.type === "demo" ? "Demo" : a.coming_soon ? "Upcoming" : "Released"} · app ${a.appid}</span>
       <button class="close" id="d-close" aria-label="Close">×</button></div>
     <div class="dhead">${thumb(a, "cover")}
       <div><h2 class="dname">${esc(a.name)}</h2>
         <p class="dmeta">${esc((a.developers || []).join(", ") || "Unknown studio")} · ${esc(a.release_date ? fmtDay(a.release_date, true) : a.release_date_text || "No date")}</p>
-        <div class="tags">${(a.tags || []).slice(0, 10).map(t => `<span class="tag">${esc(t)}</span>`).join("")}</div></div></div>
+        <div class="tags">${(a.tags || []).slice(0, 10).map(tagChip).join("")}</div></div></div>
     <div class="stats">${stats.map(([l, v, x]) => `<div class="stat"><span>${l}</span><b>${v}</b>${x}</div>`).join("")}</div>
 
     <div class="dh"><span>Timeline</span>
@@ -713,10 +1156,14 @@ function drawGame() {
     ${available.length ? `<div class="chart" id="chart"></div>
     <div class="legend">
       <span><svg width="18" height="10"><rect width="18" height="10" fill="var(--band)" stroke="var(--indigo)" stroke-opacity=".3"/></svg>Steam sale or fest</span>
-      <span><svg width="10" height="10"><circle cx="5" cy="5" r="4" fill="var(--panel)" stroke="var(--indigo)" stroke-width="2"/></svg>Update or announcement</span>
+      <span><svg width="12" height="12"><circle cx="6" cy="6" r="5" fill="var(--indigo)"/></svg>Major update, 1.0 or DLC</span>
+      <span><svg width="10" height="10"><circle cx="5" cy="5" r="4" fill="var(--panel)" stroke="var(--indigo)" stroke-width="2"/></svg>Update or post</span>
+      <span><svg width="8" height="8"><circle cx="4" cy="4" r="2.6" fill="var(--slate)"/></svg>Patch</span>
+      <span><svg width="10" height="10"><circle cx="5" cy="5" r="4.5" fill="var(--good)"/></svg>Sale or free weekend</span>
       <span><svg width="10" height="10"><path d="M5 0 L10 5 L5 10 L0 5Z" fill="var(--t4)"/></svg>Art and trailers</span>
       <span><svg width="10" height="10"><path d="M5 0 L10 5 L5 10 L0 5Z" fill="var(--t2)"/></svg>Tags and text</span>
       <span><svg width="10" height="10"><path d="M5 0 L10 5 L5 10 L0 5Z" fill="var(--good)"/></svg>Price</span>
+      <span><svg width="10" height="10"><path d="M5 0 L10 5 L5 10 L0 5Z" fill="var(--indigo)"/></svg>Left Early Access or new DLC</span>
     </div>` : `<div class="empty">No history yet. The first snapshot appears after the next daily run.</div>`}
 
     <div class="dh"><span>Store page changes</span><span class="muted" style="font-size:13px;font-weight:500">${changes.length ? changes.length + " logged" : ""}</span></div>
@@ -735,8 +1182,7 @@ function drawGame() {
       <a href="https://steamdb.info/app/${a.appid}/charts/" target="_blank" rel="noopener">SteamDB charts</a></div>` : ""}`;
 
   $("#d-close").onclick = G.close;
-  d.querySelectorAll("[data-m]").forEach(b => b.onclick = () => { G.metric = +b.dataset.m; drawGame(); });
-  d.querySelectorAll("tr.row").forEach(tr => { tr.onclick = () => openGame(+tr.dataset.app); tr.onkeydown = e => { if (e.key === "Enter") openGame(+tr.dataset.app); }; });
+  d.querySelectorAll("[data-m]").forEach(b => b.onclick = () => { G.metric = b.dataset.m === "hist" ? "hist" : +b.dataset.m; drawGame(); });
   const cmp = $("#d-compare");
   if (cmp) cmp.onclick = () => {
     S.cmp.tags = a.tags.slice(0, 5); S.cmp.price = a.price_cents ? (a.price_cents / 100).toFixed(2) : ""; S.cmp.rows = null;
@@ -760,9 +1206,21 @@ function changeRow(c) {
   return `<li><time>${fmtDay(c.day)}</time><span class="f"><svg width="9" height="9"><path d="M4.5 0 L9 4.5 L4.5 9 L0 4.5Z" fill="var(${color})"/></svg>${esc(label)}</span><span class="v">${v}</span></li>`;
 }
 
+const MAJOR_POST = new Set(["release", "major_update", "dlc"]), GREEN_POST = new Set(["sale", "free_weekend"]);
+function postMark(e, cx, cy) {
+  const c = e.category || "news";
+  if (c === "crosspost") return "";
+  if (MAJOR_POST.has(c)) return `<circle cx="${cx}" cy="${cy}" r="5.5" fill="var(--indigo)" stroke="var(--panel)" stroke-width="1.5"/>`;
+  if (GREEN_POST.has(c)) return `<circle cx="${cx}" cy="${cy}" r="4.5" fill="var(--good)" stroke="var(--panel)" stroke-width="1.5"/>`;
+  if (c === "patch") return `<circle cx="${cx}" cy="${cy}" r="2.6" fill="var(--slate)"/>`;
+  return `<circle cx="${cx}" cy="${cy}" r="4" fill="var(--panel)" stroke="var(--indigo)" stroke-width="2"/>`;
+}
+const postLine = e => `<div>${MAJOR_POST.has(e.category) ? "●" : e.category === "patch" ? "·" : "○"} ${esc(POST[e.category] || "Post")}: ${esc(e.title)}</div>`;
+
 function drawChart() {
   const host = $("#chart");
   if (!host) return;
+  if (G.metric === "hist") return drawHistory(host);
   const m = METRICS.find(x => x.key === G.metric);
   const pts = G.series.filter(r => r[m.key] != null).map(r => ({ t: toMs(r[0]), v: r[m.key], day: String(r[0]).slice(0, 10) }));
   const W = Math.max(300, host.clientWidth), H = 250, pad = { l: 50, r: 14, t: 26, b: 34 };
@@ -800,7 +1258,7 @@ function drawChart() {
     <path d="${line} L${x(pts.at(-1).t)} ${base} L${x(pts[0].t)} ${base} Z" fill="var(--indigo)" opacity=".08"/>
     <path d="${line}" fill="none" stroke="var(--indigo)" stroke-width="2" stroke-linejoin="round"/>
     <circle cx="${x(pts.at(-1).t)}" cy="${y(pts.at(-1).v)}" r="3.5" fill="var(--indigo)"/>
-    ${news.map(e => `<circle cx="${x(toMs(e.start_day))}" cy="${H - pad.b}" r="4" fill="var(--panel)" stroke="var(--indigo)" stroke-width="2"/>`).join("")}
+    ${news.map(e => postMark(e, x(toMs(e.start_day)), H - pad.b)).join("")}
     ${changes.map((c, i) => { const cx = x(toMs(c.day)), col = (FIELD[c.field] || [0, "--slate"])[1]; return `<path d="M${cx} ${pad.t - 14} l5 5 l-5 5 l-5 -5Z" fill="var(${col})"/>`; }).join("")}
     <line id="xh" y1="${pad.t}" y2="${H - pad.b}" stroke="var(--slate)" stroke-dasharray="3 3" visibility="hidden"/>
     <circle id="xd" r="4" fill="var(--indigo)" stroke="var(--panel)" stroke-width="2" visibility="hidden"/>
@@ -815,7 +1273,7 @@ function drawChart() {
     const day = p.day;
     const lines = [
       ...bands.filter(e => day >= String(e.start_day).slice(0, 10) && day <= String(e.end_day || e.start_day).slice(0, 10)).map(e => `<div>▭ ${esc(e.title)}</div>`),
-      ...news.filter(e => String(e.start_day).slice(0, 10) === day).map(e => `<div>○ ${esc(e.title)}</div>`),
+      ...news.filter(e => String(e.start_day).slice(0, 10) === day && e.category !== "crosspost").map(postLine),
       ...changes.filter(c => String(c.day).slice(0, 10) === day).map(c => `<div>◆ ${esc((FIELD[c.field] || [c.field])[0])} changed</div>`),
     ];
     xh.setAttribute("x1", x(p.t)); xh.setAttribute("x2", x(p.t)); xh.setAttribute("visibility", "visible");
@@ -831,6 +1289,60 @@ function drawChart() {
   hover.addEventListener("pointerdown", move);
   hover.addEventListener("pointerleave", () => { tip.hidden = true; xh.setAttribute("visibility", "hidden"); xd.setAttribute("visibility", "hidden"); });
 }
+/* Reviews per month (or week) since launch, from Steam's own review history. */
+function drawHistory(host) {
+  const h = G.history, weekly = h.rollup_type === "week";
+  const rows = (h.rollups || []).map(r => ({ t: toMs(r[0]), up: r[1], down: r[2], day: String(r[0]).slice(0, 10) }));
+  const W = Math.max(300, host.clientWidth), H = 250, pad = { l: 50, r: 14, t: 26, b: 34 };
+  const stepMs = (weekly ? 7 : 30.44) * DAY, t0 = rows[0].t, t1 = rows.at(-1).t + stepMs;
+  const x = t => pad.l + ((t - t0) / (t1 - t0)) * (W - pad.l - pad.r);
+  const max = Math.max(1, ...rows.map(r => r.up + r.down)) * 1.08;
+  const y = v => H - pad.b - (v / max) * (H - pad.t - pad.b);
+  const step = (() => { const raw = max / 4, p = 10 ** Math.floor(Math.log10(raw)); return [1, 2, 2.5, 5, 10].map(s => s * p).find(s => s >= raw); })();
+  const yt = []; for (let v = 0; v <= max; v += step) yt.push(v);
+  const years = (t1 - t0) / (365 * DAY);
+  const xt = [];
+  for (let d = new Date(t0); d.getTime() <= t1; d.setUTCMonth(d.getUTCMonth() + 1)) {
+    const m = d.getUTCMonth();
+    if (years > 2.5 ? m === 0 : years > 1 ? m % 6 === 0 : m % 3 === 0) xt.push(Date.UTC(d.getUTCFullYear(), m, 1));
+  }
+  const label = t => years > 2.5 ? String(new Date(t).getUTCFullYear()) : new Date(t).toLocaleDateString("en-GB", { month: "short", year: "numeric", timeZone: "UTC" });
+  const bw = Math.max(1, x(t0 + stepMs) - x(t0) - (weekly ? 0.5 : 1.5));
+  const posts = G.events.filter(e => e.appid != null && (MAJOR_POST.has(e.category) || GREEN_POST.has(e.category)) && toMs(e.start_day) >= t0);
+  const marks = G.changes.filter(c => (c.field === "early_access" && c.new_value === "Full release") || c.field === "dlc");
+
+  host.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Reviews per ${weekly ? "week" : "month"} since launch">
+    ${yt.map(v => `<line x1="${pad.l}" x2="${W - pad.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--rule-soft)"/><text x="${pad.l - 8}" y="${y(v) + 4}" text-anchor="end">${compact(v)}</text>`).join("")}
+    ${xt.map(t => `<text x="${x(t)}" y="${H - pad.b + 18}" text-anchor="middle">${label(t)}</text>`).join("")}
+    ${rows.map(r => `<rect x="${x(r.t).toFixed(1)}" y="${y(r.up).toFixed(1)}" width="${bw.toFixed(1)}" height="${(H - pad.b - y(r.up)).toFixed(1)}" fill="var(--indigo)" opacity=".75"/>
+      <rect x="${x(r.t).toFixed(1)}" y="${y(r.up + r.down).toFixed(1)}" width="${bw.toFixed(1)}" height="${(y(r.up) - y(r.up + r.down)).toFixed(1)}" fill="var(--bad)" opacity=".7"/>`).join("")}
+    ${posts.map(e => postMark(e, x(toMs(e.start_day)), pad.t - 12)).join("")}
+    ${marks.map(c => `<path d="M${x(toMs(c.day))} ${pad.t - 22} l5 5 l-5 5 l-5 -5Z" fill="var(${(FIELD[c.field] || [0, "--slate"])[1]})"/>`).join("")}
+    <rect x="${pad.l}" y="0" width="${W - pad.l - pad.r}" height="${H}" fill="transparent" id="hover"/>
+  </svg><div class="tip" id="tip" hidden></div>
+  <p class="muted" style="font-size:12.5px;margin:4px 0 0">Reviews per ${weekly ? "week" : "month"} since launch, from Steam's review history: positive in blue, negative in red. Markers show major posts and 1.0/DLC changes.</p>`;
+
+  const svg = host.querySelector("svg"), tip = $("#tip");
+  const move = ev => {
+    const r = svg.getBoundingClientRect(), px = (ev.clientX - r.left) * (W / r.width);
+    const t = t0 + ((px - pad.l) / (W - pad.l - pad.r)) * (t1 - t0);
+    const row = rows.reduce((a, b) => Math.abs(b.t + stepMs / 2 - t) < Math.abs(a.t + stepMs / 2 - t) ? b : a);
+    const end = row.t + stepMs, n = row.up + row.down;
+    const inPeriod = d => toMs(d) >= row.t && toMs(d) < end;
+    const head = weekly ? `Week of ${fmtDay(row.day, true)}` : new Date(row.t).toLocaleDateString("en-GB", { month: "long", year: "numeric", timeZone: "UTC" });
+    tip.innerHTML = `<div><b>${head}</b></div><div>${num(n)} reviews${n ? `, ${Math.round(row.up / n * 100)}% positive` : ""}</div>
+      ${posts.filter(e => inPeriod(e.start_day)).map(postLine).join("")}
+      ${marks.filter(c => inPeriod(c.day)).map(c => `<div>◆ ${esc(c.field === "dlc" ? c.new_value : "Left Early Access")}</div>`).join("")}`;
+    tip.hidden = false;
+    tip.style.left = Math.min(Math.max(0, (x(row.t) / W) * r.width + 12), r.width - tip.offsetWidth) + "px";
+    tip.style.top = "8px";
+  };
+  const hover = $("#hover");
+  hover.addEventListener("pointermove", move);
+  hover.addEventListener("pointerdown", move);
+  hover.addEventListener("pointerleave", () => { tip.hidden = true; });
+}
+
 let rz; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => G && drawChart(), 120); });
 
 /* ═════════════════════════════════════════════════════════════ connecting */

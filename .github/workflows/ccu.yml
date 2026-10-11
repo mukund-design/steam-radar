@@ -6,8 +6,8 @@ on:
 concurrency: { group: ccu, cancel-in-progress: true }
 jobs:
   ccu:
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

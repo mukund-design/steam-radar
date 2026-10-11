@@ -145,3 +145,63 @@ def test_tag_diff():
     assert diff_tags(old, ["Roguelike", "Action", "Cozy"]) == {
         "field": "tags", "old_value": "Indie", "new_value": "Cozy"}
     assert diff_tags(None, old) is None
+
+
+# ── surges update ───────────────────────────────────────────────────────
+
+from collector.steam import classify_event, parse_histogram, parse_partner_events
+
+
+def test_histogram():
+    j = {"success": 1, "results": {"start_date": 1, "end_date": 2, "weeks": [], "rollup_type": "month",
+         "rollups": [{"date": 1577836800, "recommendations_up": 4820, "recommendations_down": 76},
+                     {"date": 1575158400, "recommendations_up": 5652, "recommendations_down": 65}],
+         "recent": [{"date": 1788220800, "recommendations_up": 30, "recommendations_down": 0}]}}
+    h = parse_histogram(j)
+    assert h["rollup_type"] == "month"
+    assert h["rollups"] == [["2019-12-01", 5652, 65], ["2020-01-01", 4820, 76]]   # sorted by day
+    assert h["recent"] == [["2026-09-01", 30, 0]]
+    assert parse_histogram({"success": 2}) is None
+
+
+def test_partner_events():
+    j = {"success": 1, "events": [
+        {"gid": "8", "appid": 1145360, "event_type": 12, "event_name": "Post-Launch Patch",
+         "rtime32_start_time": 1644962700, "announcement_body": {"gid": "9", "headline": "Post-Launch Patch &amp; fixes"}},
+        {"gid": "6", "appid": 1145360, "event_type": 34, "event_name": "Hades II v1.0 Is Now Available!",
+         "rtime32_start_time": 1758816660, "announcement_body": {"gid": "7", "headline": "Hades II v1.0 Is Now Available!"}},
+        {"gid": "4", "appid": 1145360, "event_type": 14, "hidden": 1, "rtime32_start_time": 1, "announcement_body": {"gid": "5"}},
+    ]}
+    ev = parse_partner_events(j, 1145360)
+    assert [(e["gid"], e["category"]) for e in ev] == [("9", "patch"), ("7", "crosspost")]
+    assert ev[0]["title"] == "Post-Launch Patch & fixes" and ev[0]["day"] == date(2022, 2, 15)
+    assert parse_partner_events({"success": 0}, 1) is None
+
+
+def test_classify_event():
+    assert classify_event(14, "anything") == "major_update"
+    assert classify_event(15, "x") == "dlc" and classify_event(31, "x") == "free_weekend"
+    assert classify_event(28, "Version 1.0 is out now!") == "release"
+    assert classify_event(28, "Patch v1.0.3") == "patch"
+    assert classify_event(28, "Content update out now") == "major_update"
+    assert classify_event(28, "Autumn Sale: 40% off") == "sale"
+    assert classify_event(None, "We won an award") == "news"
+
+
+def test_early_access_and_dlc():
+    j = {"7": {"success": True, "data": {"type": "game", "name": "X", "dlc": [1, 2],
+          "genres": [{"id": "23", "description": "Indie"}, {"id": "70", "description": "Early Access"}],
+          "release_date": {"coming_soon": False, "date": "Mar 1, 2024"}}}}
+    d = parse_app_details(j, 7)
+    assert d["early_access"] is True and d["dlc_count"] == 2
+    a = page_state(d)
+    assert a["genres"] == ["Indie"]                       # Early Access has its own field
+    b = page_state({**d, "early_access": False, "dlc_count": 3, "genres": ["Indie"]})
+    rows = {r["field"]: r for r in diff_states(a, b)}
+    assert set(rows) == {"early_access", "dlc"}
+    assert rows["early_access"]["new_value"] == "Full release"
+    assert rows["dlc"]["new_value"] == "3 DLC (+1 new)"
+    # a state saved by an older version has no early_access/dlc and kept EA in genres: no false changes
+    old = {k: v for k, v in a.items() if k not in ("early_access", "dlc")}
+    old["genres"] = ["Early Access", "Indie"]
+    assert diff_states(old, a) == []

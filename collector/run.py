@@ -3,7 +3,7 @@
     python -m collector.run discover        # feeds -> watchlist, wishlist ranks, global events
     python -m collector.run snapshot        # daily signals for every watched game
     python -m collector.run ccu             # player-count sample (run every few hours)
-    python -m collector.run sweep           # weekly review refresh for the quiet-earner universe
+    python -m collector.run sweep           # daily: review totals + history for a seventh of the older games
     python -m collector.run seed-universe   # monthly: pull games with 500+ reviews from SteamSpy
     python -m collector.run daily           # discover + snapshot
     python -m collector.run probe 1145360   # print every parsed signal for one app (no database)
@@ -130,9 +130,14 @@ def snapshot(steam: SteamClient, url: str) -> None:
           and (news_at is null or news_at < now() - interval '3 days')""", {"ids": watched})
     games = db.fetch_ids(conn, "select appid from apps where appid = any(%(ids)s) and type <> 'demo'",
                          {"ids": watched})
+    # Review history (daily counts for 30 days) for released games, to spot surges.
+    need_hist = db.fetch_ids(conn, """
+        select appid from apps where appid = any(%(ids)s) and type = 'game'
+          and not coalesce(coming_soon, false)
+          and (hist_at is null or hist_at < now() - interval '20 hours')""", {"ids": watched})
     conn.close()
-    log.info("watched %d | details %d | tags %d | news %d", len(watched), len(need_details),
-             len(need_tags), len(need_news))
+    log.info("watched %d | details %d | tags %d | posts %d | review history %d", len(watched),
+             len(need_details), len(need_tags), len(need_news), len(need_hist))
 
     def details(c, a):
         changes = db.apply_details(c, a, steam.app_details(a), day)
@@ -149,7 +154,10 @@ def snapshot(steam: SteamClient, url: str) -> None:
         db.upsert_snapshot(c, day, "ccu_peak", {a: steam.current_players(a)})
 
     def news(c, a):
-        db.add_news(c, a, steam.news(a))
+        db.add_news(c, a, fetch_posts(steam, a))
+
+    def history(c, a):
+        db.save_histogram(c, a, steam.review_histogram(a))
 
     def tags(c, a):
         db.apply_tags(c, a, steam.steamspy_tags(a), day)
@@ -158,7 +166,8 @@ def snapshot(steam: SteamClient, url: str) -> None:
     # (Reviews share the store host with details but use a separate, lighter bucket.)
     phases = [("details", need_details, details), ("reviews", watched, reviews),
               ("followers", games, followers), ("ccu", watched, ccu),
-              ("news", need_news, news), ("tags", need_tags, tags)]
+              ("posts", need_news, news), ("tags", need_tags, tags),
+              ("history", need_hist, history)]
     with ThreadPoolExecutor(max_workers=len(phases)) as pool:
         for f in [pool.submit(_phase, n, url, ids, fn) for n, ids, fn in phases]:
             f.result()
@@ -177,6 +186,42 @@ def ccu_sample(steam: SteamClient, url: str) -> None:
         limit %(limit)s""", {"limit": env_int("WATCH_LIMIT", 2000)})
     conn.close()
     _phase("ccu", url, ids, lambda c, a: db.upsert_snapshot(c, day, "ccu_peak", {a: steam.current_players(a)}))
+
+
+def fetch_posts(steam: SteamClient, appid: int) -> list[dict]:
+    """Developer posts with Steam's event type; plain news feed if the event feed fails."""
+    posts = steam.partner_events(appid)
+    return posts if posts is not None else steam.news(appid)
+
+
+def investigate_surges(steam: SteamClient, url: str) -> None:
+    """For every game surging right now, re-read its store page and posts so the likely
+    cause (1.0 launch, DLC, update, discount...) is on record. Only movers are checked,
+    which keeps this well inside Steam's rate limits."""
+    db.refresh_metrics(url)
+    day = today()
+    conn = db.connect(url)
+    try:
+        need_details = db.fetch_ids(conn, """
+            select s.appid from mv_surges s join apps a using (appid)
+            where a.details_at is null or a.details_at < now() - interval '20 hours'
+            limit 400""")
+        need_posts = db.fetch_ids(conn, """
+            select s.appid from mv_surges s join apps a using (appid)
+            where a.news_at is null or a.news_at < now() - interval '20 hours'
+            limit 400""")
+    except Exception as e:                      # schema not updated yet
+        log.warning("surge check skipped: %s", e)
+        return
+    finally:
+        conn.close()
+    log.info("surging games to check: %d store pages, %d post lists", len(need_details), len(need_posts))
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        a = pool.submit(_phase, "surge-details", url, need_details,
+                        lambda c, x: db.apply_details(c, x, steam.app_details(x), day))
+        b = pool.submit(_phase, "surge-posts", url, need_posts,
+                        lambda c, x: db.add_news(c, x, fetch_posts(steam, x)))
+        a.result(), b.result()
 
 
 # ── quiet-earner universe ────────────────────────────────────────────────
@@ -200,7 +245,7 @@ def seed_universe(steam: SteamClient, url: str) -> None:
 
 def sweep(steam: SteamClient, url: str) -> None:
     day = today()
-    batch = env_int("SWEEP_BATCH", 3000)
+    batch = env_int("SWEEP_BATCH", 3500)
     conn = db.connect(url)
     ids = db.fetch_ids(conn, """
         select appid from apps
@@ -209,7 +254,13 @@ def sweep(steam: SteamClient, url: str) -> None:
         order by reviews_at nulls first limit %(b)s""", {"b": batch})
     conn.close()
 
-    _phase("sweep-reviews", url, ids, lambda c, a: db.upsert_reviews(c, day, {a: steam.reviews_summary(a)}))
+    # Review totals and review history use separate rate limits, so they run side by side.
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        r = pool.submit(_phase, "sweep-reviews", url, ids,
+                        lambda c, a: db.upsert_reviews(c, day, {a: steam.reviews_summary(a)}))
+        h = pool.submit(_phase, "sweep-history", url, ids,
+                        lambda c, a: db.save_histogram(c, a, steam.review_histogram(a)))
+        r.result(), h.result()
 
     conn = db.connect(url)
     # Release date + price + tags are needed to qualify as a quiet earner.
@@ -239,7 +290,9 @@ def probe(steam: SteamClient, appid: int) -> None:
         "followers": steam.followers(appid),
         "current_players": steam.current_players(appid),
         "tags": (steam.steamspy_tags(appid) or [])[:10],
-        "news": steam.news(appid, 3),
+        "posts": (fetch_posts(steam, appid) or [])[:5],
+        "review_history": (lambda h: h and {"rollup_type": h["rollup_type"], "months_or_weeks": len(h["rollups"]),
+                                             "last_30_days": h["recent"][-7:]})(steam.review_histogram(appid)),
     }
     print(json.dumps(out, indent=2, default=str))
 
@@ -262,12 +315,15 @@ def main(argv=None) -> None:
         discover(steam, url)
     if a.command in ("snapshot", "daily"):
         snapshot(steam, url)
+        investigate_surges(steam, url)
     if a.command == "ccu":
         ccu_sample(steam, url)
     if a.command == "sweep":
         sweep(steam, url)
+        investigate_surges(steam, url)
     if a.command == "seed-universe":
         seed_universe(steam, url)
+    db.refresh_metrics(url)
 
 
 if __name__ == "__main__":

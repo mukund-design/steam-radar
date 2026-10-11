@@ -15,8 +15,11 @@ from datetime import date, timedelta
 from pathlib import Path
 
 import psycopg
+from psycopg.types.json import Jsonb
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+from collector.steam import classify_event  # noqa: E402
 DAYS = 75
 rng = random.Random(7)
 
@@ -84,7 +87,7 @@ def main(url: str) -> None:
                         [(e["start"], e["end"], e["title"], e["id"]) for e in events])
     autumn = (date(2026, 10, 1), date(2026, 10, 8))
 
-    apps, snaps, changes, news = [], [], [], []
+    apps, snaps, changes, news, history = [], [], [], [], {}
     appid = 3_100_000
 
     def new_app(**kw):
@@ -109,6 +112,10 @@ def main(url: str) -> None:
             ["Q4 2026", "Q1 2027", "Q2 2027", "2027", "Coming soon", "Nov 2026", "Dec 2026"]))
         base = int(math.exp(rng.gauss(7.3, 1.25)))
         drift = rng.gauss(0.004, 0.003)
+        if {"Physics", "Party Game", "Deckbuilder"} & set(a["tags"][:5]):
+            drift += 0.007                                  # genres trending in the sample data
+        if "Horror" in a["tags"][:5]:
+            drift -= 0.003
         spike_day, spike_size, spike_len = None, 0, 0
         if i < 12:                                          # breakouts
             spike_day = rng.randint(DAYS - 14, DAYS - 3)
@@ -122,7 +129,7 @@ def main(url: str) -> None:
             elif why == "trailer":
                 page_change(a, sd - timedelta(days=1), "trailers", "1 trailers", "2 trailers (+1 new)")
             elif why == "news":
-                news.append((a["appid"], sd, "Our new gameplay trailer is out!", f"n{a['appid']}t"))
+                news.append((a["appid"], sd, "Our new gameplay trailer is out!", f"n{a['appid']}t", 28))
             if rng.random() < 0.5:
                 page_change(a, sd + timedelta(days=rng.randint(0, 2)), "tags",
                             rng.choice(TAGS), rng.choice(TAGS))
@@ -185,12 +192,24 @@ def main(url: str) -> None:
                            reviews_positive=int(reviews * rng.uniform(0.72, 0.93)),
                            ccu_peak=int(pre * 0.05 * quality * math.exp(-age / 12) * rng.uniform(0.8, 1.2)) + 3)
             snaps.append(row)
-        news.append((a["appid"], rel, "Out now!", f"n{a['appid']}l"))
-        if age_ok := (rel < days[-1] - timedelta(days=6)):
-            news.append((a["appid"], rel + timedelta(days=rng.randint(3, 6)), "Patch 1.0.1 — fixes and QoL", f"n{a['appid']}p"))
+        news.append((a["appid"], rel, "Out now!", f"n{a['appid']}l", 10))
+        if rel < days[-1] - timedelta(days=6):
+            news.append((a["appid"], rel + timedelta(days=rng.randint(3, 6)), "Patch 1.0.1: fixes and QoL", f"n{a['appid']}p", 12))
+        prev, recent = 0, []
+        for row in snaps[-DAYS:]:
+            if row.get("reviews_total") is not None:
+                inc = row["reviews_total"] - prev
+                prev = row["reviews_total"]
+                up = int(inc * 0.84)
+                recent.append([row["day"].isoformat(), up, inc - up])
+        history[a["appid"]] = ("week", [[recent[0][0], sum(r[1] for r in recent), sum(r[2] for r in recent)]] if recent else [],
+                               recent[-30:])
         page_change(a, rel, "coming_soon", "coming soon", "released")
 
     # ── older released games (quiet earners and the rest) ──
+    # The first 14 surge this week, each with a planted cause.
+    planted = ["release", "release", "release", "dlc", "dlc", "major_update", "major_update", "major_update",
+               "free_weekend", "free_weekend", "page", "none", "none", "backlash"]
     for i in range(140):
         rel = today - timedelta(days=rng.randint(380, 2200))
         a = new_app(release_date=rel, release_date_text=rel.strftime("%b %-d, %Y"))
@@ -200,9 +219,19 @@ def main(url: str) -> None:
         ccu = max(3, int(total * rng.uniform(0.005, 0.03)))
         fol = int(total * rng.uniform(1.5, 4))
         reviews = total - monthly * DAYS / 30
+        surge = planted[i] if i < len(planted) else None
+        boost = rng.uniform(3.2, 6.5) if surge else 1
+        recent = []
         for k, d in enumerate(days):
             sale = autumn[0] <= d <= autumn[1]
-            reviews += monthly / 30 * (2.5 if sale else 1) * rng.uniform(0.6, 1.4)
+            inc = monthly / 30 * (2.5 if sale else 1) * rng.uniform(0.6, 1.4)
+            if surge and k >= DAYS - 7:
+                inc = max(inc * boost, 3 + rng.random() * 4)
+            reviews += inc
+            day_pos = 0.35 if surge == "backlash" and k >= DAYS - 7 else pos
+            if k >= DAYS - 30:
+                n_inc = int(round(inc))
+                recent.append([d.isoformat(), int(round(n_inc * day_pos)), n_inc - int(round(n_inc * day_pos))])
             row = {"appid": a["appid"], "day": d, "reviews_total": int(reviews),
                    "reviews_positive": int(reviews * pos)}
             if k % 7 == 0 or k > DAYS - 15:          # some days only swept weekly
@@ -212,27 +241,65 @@ def main(url: str) -> None:
         if rng.random() < 0.5:
             page_change(a, autumn[0], "discount", "0%", f"{rng.choice([20, 25, 30, 40, 50])}%")
             page_change(a, autumn[1] + timedelta(days=1), "discount", "40%", "0%")
-        if rng.random() < 0.25:
+        if rng.random() < 0.25 and not surge:
             d = days[rng.randint(0, DAYS - 1)]
-            news.append((a["appid"], d, rng.choice(["Major update: new biome", "1.2 is live", "Free content update",
-                                                     "Anniversary update"]), f"n{a['appid']}u"))
+            title, et = rng.choice([("Major update: new biome", 14), ("1.2 is live", 13), ("Free content update", 14),
+                                    ("Hotfix 1.1.4", 12), ("Anniversary update", 13)])
+            news.append((a["appid"], d, title, f"n{a['appid']}u", et))
+        if rng.random() < 0.3:
+            news.append((a["appid"], days[rng.randint(0, DAYS - 1)], "Patch notes", f"n{a['appid']}q", 12))
+        when = days[-1] - timedelta(days=rng.randint(3, 6))
+        if surge == "release":
+            a["early_access"] = False
+            page_change(a, when, "early_access", "Early Access", "Full release")
+            news.append((a["appid"], when, "Version 1.0 is out now!", f"n{a['appid']}r", 14))
+        elif surge == "dlc":
+            a["dlc_count"] = 2
+            page_change(a, when, "dlc", "1 DLC", "2 DLC (+1 new)")
+            news.append((a["appid"], when, rng.choice(["Our first expansion is here", "New DLC: The Deep"]), f"n{a['appid']}d", 15))
+        elif surge == "major_update":
+            news.append((a["appid"], when, rng.choice(["The Frozen North update", "Update 3.0: Co-op is here", "Chapter 2 is live"]),
+                         f"n{a['appid']}m", 14))
+        elif surge == "free_weekend":
+            news.append((a["appid"], when, "Free weekend: play until Sunday", f"n{a['appid']}f", 31))
+        elif surge == "page":
+            page_change(a, when, "trailers", "2 trailers", "3 trailers (+1 new)")
+            page_change(a, when, "capsule", "header.jpg?t=1", "header.jpg?t=2")
+        # Steam-style review history: months since launch, days for the last 30
+        months, m = [], date(rel.year, rel.month, 1)
+        launch_share = rng.uniform(0.15, 0.35)
+        n_months = max(1, (today.year - m.year) * 12 + today.month - m.month + 1)
+        for j in range(n_months):
+            share = launch_share if j == 0 else (1 - launch_share) / max(1, n_months - 1) * (1.6 if j < 3 else 1) * rng.uniform(0.6, 1.3)
+            if surge == "release" and j == n_months - 1:
+                share *= 3
+            n_rev = int(total * share)
+            months.append([m.isoformat(), int(n_rev * pos), n_rev - int(n_rev * pos)])
+            m = date(m.year + (m.month // 12), m.month % 12 + 1, 1)
+        history[a["appid"]] = ("month", months, recent)
 
     # ── write ──
     with conn.cursor() as cur:
         cur.executemany("""
             insert into apps (appid, name, type, parent_appid, coming_soon, release_date, release_date_text,
-              is_free, price_cents, developers, publishers, genres, tags, header_image, first_seen, watch)
+              is_free, price_cents, developers, publishers, genres, tags, header_image, first_seen, watch,
+              early_access, dlc_count)
             values (%(appid)s, %(name)s, %(type)s, %(parent_appid)s, %(coming_soon)s, %(release_date)s,
               %(release_date_text)s, %(is_free)s, %(price_cents)s, %(developers)s, %(publishers)s, %(genres)s,
-              %(tags)s, %(header_image)s, %(first_seen)s, true)""", apps)
+              %(tags)s, %(header_image)s, %(first_seen)s, true, %(early_access)s, %(dlc_count)s)""",
+            [{"early_access": None, "dlc_count": None, **a} for a in apps])
         cols = ["followers", "reviews_total", "reviews_positive", "ccu_peak", "wishlist_rank"]
         cur.executemany(f"""insert into daily_snapshots (appid, day, {', '.join(cols)})
                             values (%(appid)s, %(day)s, {', '.join('%(' + c + ')s' for c in cols)})""",
                         [{c: s.get(c) for c in ["appid", "day", *cols]} for s in snaps])
         cur.executemany("insert into page_changes (appid, day, field, old_value, new_value) values (%s,%s,%s,%s,%s)",
                         changes)
-        cur.executemany("insert into events (appid, start_day, kind, title, ext_id) values (%s,%s,'news',%s,%s)",
-                        news)
+        cur.executemany("""insert into events (appid, start_day, kind, title, ext_id, event_type, category)
+                           values (%s, %s, 'news', %s, %s, %s, %s)""",
+                        [(n[0], n[1], n[2], n[3], n[4] if len(n) > 4 else 28,
+                          classify_event(n[4] if len(n) > 4 else 28, n[2])) for n in news])
+        cur.executemany("insert into review_history (appid, rollup_type, rollups, recent) values (%s, %s, %s, %s)",
+                        [(k, v[0], Jsonb(v[1]), Jsonb(v[2])) for k, v in history.items()])
 
     export(conn, today)
 
@@ -252,6 +319,7 @@ def rows(conn, sql, *args):
 
 
 def export(conn, today):
+    conn.execute("select refresh_metrics()")
     out = {
         "generated_for": today,
         "breakouts": rows(conn, "select * from v_breakouts order by heat desc nulls last limit 150"),
@@ -261,7 +329,7 @@ def export(conn, today):
         "tags": rows(conn, "select * from v_tags"),
         "apps": rows(conn, "select * from v_app_metrics"),
         "changes": rows(conn, "select appid, day, field, old_value, new_value from page_changes order by day"),
-        "events": rows(conn, "select appid, start_day, end_day, kind, title, url from events order by start_day"),
+        "events": rows(conn, "select appid, start_day, end_day, kind, title, url, event_type, category from events order by start_day"),
     }
     snaps = rows(conn, """select appid, day, followers, reviews_total, ccu_peak, wishlist_rank
                           from daily_snapshots order by appid, day""")
@@ -270,10 +338,17 @@ def export(conn, today):
         series.setdefault(s["appid"], []).append(
             [s["day"].isoformat(), s["followers"], s["reviews_total"], s["ccu_peak"], s["wishlist_rank"]])
     out["series"] = series
-    # sanity: the comparables function on real SQL, saved for a test in the dashboard
-    out["sample_comparables"] = rows(conn, "select * from find_comparables(array['Cozy','Building','Relaxing'], 1499)")
+    out["genres"] = rows(conn, "select * from v_genres")
+    out["surges"] = rows(conn, "select * from v_surges order by score desc")
+    out["surge_causes"] = rows(conn, "select * from v_surge_causes")
+    out["history"] = {r["appid"]: {"rollup_type": r["rollup_type"], "rollups": r["rollups"], "recent": r["recent"]}
+                      for r in rows(conn, "select appid, rollup_type, rollups, recent from review_history")}
+    out["overview"] = conn.execute("select overview()").fetchone()[0]
+    out["genre_details"] = {g["tag"]: conn.execute("select genre_detail(%s)", (g["tag"],)).fetchone()[0]
+                            for g in out["genres"]}
     js = "window.DEMO_DATA = " + json.dumps(out, default=_json, separators=(",", ":")) + ";\n"
     (ROOT / "web" / "demo-data.js").write_text(js)
+    print(f"surges {len(out['surges'])}: " + ", ".join(f"{c['cause']} {c['surges']}" for c in out["surge_causes"]))
     print(f"demo-data.js: {len(js)/1024:.0f} KB | breakouts {len(out['breakouts'])} | demos {len(out['demos'])} | "
           f"launches {len(out['launches'])} | quiet {len(out['quiet'])} | apps {len(out['apps'])}")
 

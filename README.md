@@ -32,21 +32,26 @@ Open `web/index.html` in a browser to try it with invented sample data first.
    `DATABASE_URL` = the pooler connection string.
 3. **Actions** tab → *daily snapshot* → **Run workflow**. The first run discovers
    ~1,000–2,000 games and takes 30–90 minutes.
-4. **Actions** → *quiet-earner sweep* → **Run workflow** with command `seed-universe`
-   (about an hour; SteamSpy allows one page per minute), then once more with `sweep`.
+4. **Actions** → *older games sweep* → **Run workflow** with command `seed-universe`
+   (about an hour; SteamSpy allows one page per minute). The daily sweep takes it from there.
 
 After that everything is scheduled:
 
 | Workflow | When | What |
 |---|---|---|
-| daily snapshot | every day 04:17 UTC | feeds → watchlist, wishlist ranks, followers, reviews, store pages, update posts, tags |
+| daily snapshot | every day 04:17 UTC | feeds → watchlist, wishlist ranks, followers, reviews, review history, store pages, typed update posts, tags; then a store-page and post check for every surging game |
 | player counts | every 4 hours | concurrent players; the day's peak is kept |
-| quiet-earner sweep | Sundays | review counts for released games with 500+ reviews |
-| (same workflow) | 1st of the month | refresh that list from SteamSpy |
+| older games sweep | every day 09:23 UTC | review totals and review history for a seventh of the older games (each one weekly), then the same surge check |
+| (same workflow) | 1st of the month | add games that newly passed 500 reviews (nothing is removed) |
 
-Public repositories get unlimited Actions minutes. On a private repository the
-free plan has a monthly minute allowance; lower `WATCH_LIMIT` (a repository
-*variable*, default 2000) if you run short.
+The defaults assume a **public** repository, which gets unlimited Actions minutes:
+2,000 games tracked daily and 3,500 older games swept a day. Tune with repository *variables*
+(Settings → Secrets and variables → Actions → Variables): `WATCH_LIMIT` and `SWEEP_BATCH`.
+
+For a **private** repository (2,000 free minutes a month on GitHub Free), set
+`WATCH_LIMIT` to 1000, and change the schedules to every 8 hours in `ccu.yml`
+(`41 */8 * * *`) and to weekly in `weekly.yml` (`23 9 * * 0`, with `SWEEP_BATCH` 2000).
+That comes to roughly 1,200–1,400 minutes a month, with older games re-checked less often.
 
 ### 3. Dashboard
 Host the `web/` folder anywhere static: Cloudflare Pages, GitHub Pages, Netlify,
@@ -58,13 +63,43 @@ or just open the file. Then either:
 
 The publishable/anon key is read-only: `schema.sql` grants it `select` and nothing else.
 
+## The tabs
+
+| Tab | What it answers |
+|---|---|
+| **Overview** | The day's digest: what's breaking out and what changed on Steam just before, genres heating up and cooling, hot demos, recent launches, new wishlist-chart entries, capsule/trailer/tag changes, quiet earners. |
+| **Genres** | Which genres are doing well. Per genre (a game counts under its five main tags): follower growth of its upcoming games against the typical upcoming game, breakouts, hot demos, launch results, reviews gained this week, quiet earners. Click a genre for its games and the tags it's most often paired with. |
+| **Surges** | Released games suddenly picking up reviews or players (2× their usual week or more), with the likely trigger: left Early Access / 1.0, new DLC, major update, free weekend, discount, Steam sale or fest, store page change, patch, a wave of negative reviews, or nothing visible on Steam. A bar on top shows what came before surges over the last 30 days. |
+| Breakouts, Demo heat, Launches, Quiet earners | Full lists behind the overview panels. |
+| Comparables | How the closest released games did, for any set of tags and a price. |
+
+Click any game for its timeline (with Steam events, update posts sized by importance
+and store-page changes marked), including **Since launch**: reviews per month back to
+release, from Steam's own review history. Click any tag for its genre panel.
+
+### How surges and causes work
+- Steam publishes each game's reviews per day for the last 30 days. A surge is a week
+  with at least 15 reviews and at least twice the average of the three weeks before,
+  or (for games watched daily) peak players 1.5× last week's and at least 50.
+  Games launched in the last 30 days are left to the Launches tab.
+- When a game surges, the collector re-reads its store page and its posts the same day.
+  Posts carry Steam's own type (patch, update, major update, DLC, sale, free trial…);
+  plain news posts are typed from their title.
+- The likely cause is the most specific thing that happened from 10 days before the
+  surge week to its end, in this order: left Early Access, new DLC, major update,
+  free weekend, discount, Steam sale, update, store page change, Steam fest, patch.
+  A surge made mostly of negative reviews is labelled that way first.
+- These are coincidences in time, not proof. "Nothing on Steam" usually means a video,
+  stream or post elsewhere.
+
 ## What you'll see, and when
 
 | View | Needs |
 |---|---|
-| Comparables, quiet earners (totals) | 1st sweep |
-| Breakouts, demo heat | 7 days of daily runs |
-| Quiet earners "last 30 days" | 4–5 weekly sweeps |
+| Comparables, quiet earners (totals) | the first sweeps after `seed-universe` |
+| Surges, Since launch chart | the first daily run (watched games); within a week for older games |
+| Breakouts, demo heat, genre heat | 7 days of daily runs |
+| Quiet earners "last 30 days" | about a month |
 | Launch scorecard | a game you watched before it launched |
 | Store page changes | the second check of a page onward |
 
@@ -87,12 +122,37 @@ Environment settings (all optional):
 | `WATCH_LIMIT` | 2000 | games tracked daily |
 | `WISHLIST_PAGES` | 10 | ×100 rows of the most-wishlisted list |
 | `NEW_RELEASE_PAGES` | 3 | ×100 newest releases scanned per day |
-| `SWEEP_BATCH` | 3000 | quiet-earner candidates refreshed per sweep |
+| `SWEEP_BATCH` | 3500 | older games refreshed per daily sweep |
 | `UNIVERSE_MIN_REVIEWS` | 500 | SteamSpy cut-off for the quiet-earner list |
 | `STEAM_CC` | us | store region (prices are stored in USD; keep `us`) |
 
 Tests: `pytest tests` runs the parser tests. Set `TEST_DATABASE_URL` to an empty,
 throwaway Postgres database to also run the end-to-end collector test.
+
+## History and storage
+
+Nothing is ever deleted or replaced. Every reading is a new dated row, the monthly job
+only adds games, and Steam's review history goes back to each game's launch. A year of
+data at the default settings is roughly 300 MB, inside Supabase's free 500 MB, so about
+a year and a half before older daily rows need thinning (for example to weekly).
+
+## Updating to a new version
+
+1. In Supabase's **SQL Editor**, run the new `db/schema.sql`. It keeps all your data
+   and rebuilds the views (takes a few seconds).
+2. Replace the files in your GitHub repository with the new ones and commit.
+3. Reload the dashboard.
+
+If step 1 is skipped, the dashboard keeps working and the newer tabs say what's missing.
+
+## How the dashboard stays fast
+
+Per-game numbers are computed once at the end of every collector run and cached in
+`mv_app_metrics` (`select refresh_metrics()`). Every tab reads that cache, so the
+page stays quick as history grows. If you load data by hand, run
+`select refresh_metrics();` afterwards. Supabase's Security Advisor may list this
+cached view as visible to the API; that is intended, since it holds the same public
+Steam numbers as the rest of the dashboard.
 
 ## Tuning the estimates
 
@@ -100,6 +160,10 @@ The multipliers live in three SQL functions at the top of `db/schema.sql`:
 `est_wishlists` (followers × 12), `est_units` (reviews × 30) and `est_net_usd`
 (units × list price × 0.5). Change them there and re-run the file; every view and
 the dashboard follow.
+
+Generic tags that aren't genres (Indie, Singleplayer, Early Access and so on) are
+skipped when grouping games into genres. The list is `genre_ignored_tags()` in the
+same file.
 
 ## Adding events
 

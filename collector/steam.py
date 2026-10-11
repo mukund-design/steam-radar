@@ -29,6 +29,8 @@ DEFAULT_DELAYS = {
     "community": 1.0,     # steamcommunity.com
     "webapi": 0.25,       # api.steampowered.com
     "steamspy": 1.1,      # steamspy.com (1 req/s; "all" pages are 1/min)
+    "store_hist": 0.8,    # store review history (appreviewhistogram)
+    "store_events": 1.0,  # store event posts (ajaxgetadjacentpartnerevents)
 }
 
 
@@ -169,6 +171,19 @@ class SteamClient:
                            "feeds": "steam_community_announcements"})
         return parse_news(j)
 
+    def review_histogram(self, appid: int) -> dict | None:
+        """Reviews per month (or week) since launch, plus daily counts for the last 30 days."""
+        j = self.get_json("store_hist", f"https://store.steampowered.com/appreviewhistogram/{appid}",
+                          {"l": "english", "review_score_preference": 0})
+        return parse_histogram(j)
+
+    def partner_events(self, appid: int, count: int = 30) -> list[dict] | None:
+        """The developer's event posts, newest first, each with Steam's event type
+        (patch, update, major update, DLC, sale, free weekend, ...). None if the request failed."""
+        j = self.get_json("store_events", "https://store.steampowered.com/events/ajaxgetadjacentpartnerevents/",
+                          {"appid": appid, "count_before": 0, "count_after": count, "lang_list": 0})
+        return parse_partner_events(j, appid)
+
     def steamspy_tags(self, appid: int) -> list[str] | None:
         j = self.get_json("steamspy", "https://steamspy.com/api.php",
                           {"request": "appdetails", "appid": appid})
@@ -277,6 +292,10 @@ def parse_app_details(j: Any, appid: int) -> dict | None:
         "trailer_ids": sorted(str(mv.get("id")) for mv in d.get("movies") or [] if mv.get("id")),
         "screenshot_count": len(d.get("screenshots") or []),
         "demo_appids": [int(x["appid"]) for x in d.get("demos") or [] if str(x.get("appid", "")).isdigit()],
+        # Steam lists Early Access as genre 70; when it disappears the game has hit 1.0
+        "early_access": any(str(g.get("id")) == "70" or g.get("description") == "Early Access"
+                            for g in d.get("genres") or []),
+        "dlc_count": len(d.get("dlc") or []),
     }
 
 
@@ -325,6 +344,8 @@ def parse_news(j: Any) -> list[dict]:
             "title": html.unescape(n.get("title") or "Update"),
             "url": n.get("url"),
             "day": datetime.fromtimestamp(int(n["date"]), tz=timezone.utc).date(),
+            "event_type": None,
+            "category": classify_event(None, n.get("title")),
         })
     return out
 
@@ -336,3 +357,85 @@ def parse_steamspy_tags(j: Any) -> list[str] | None:
     if isinstance(tags, dict):
         return [t for t, _ in sorted(tags.items(), key=lambda kv: -int(kv[1] or 0))]
     return []          # SteamSpy returns [] when a game has no tags
+
+
+def _day(ts) -> str | None:
+    try:
+        return datetime.fromtimestamp(int(ts), tz=timezone.utc).date().isoformat()
+    except (TypeError, ValueError, OSError):
+        return None
+
+
+def parse_histogram(j: Any) -> dict | None:
+    """{'rollup_type': 'month'|'week', 'rollups': [[day, up, down], ...], 'recent': [[day, up, down], ...]}"""
+    if not isinstance(j, dict) or j.get("success") != 1 or not isinstance(j.get("results"), dict):
+        return None
+    r = j.get("results") or {}
+
+    def rows(items):
+        out = []
+        for x in items or []:
+            d = _day(x.get("date")) if isinstance(x, dict) else None
+            if d:
+                out.append([d, int(x.get("recommendations_up") or 0), int(x.get("recommendations_down") or 0)])
+        return sorted(out)
+
+    return {"rollup_type": r.get("rollup_type") or "month",
+            "rollups": rows(r.get("rollups")), "recent": rows(r.get("recent"))}
+
+
+# Steam's event types, from EProtoClanEventType in Steam's published protobufs.
+EVENT_TYPES = {
+    10: "release", 12: "patch", 13: "update", 14: "major_update", 15: "dlc",
+    16: "announcement", 20: "sale", 21: "sale", 29: "update", 30: "major_update",
+    31: "free_weekend", 32: "major_update", 33: "update", 34: "crosspost",
+    11: "stream", 17: "stream", 18: "stream", 19: "stream",
+    22: "in_game_event", 23: "in_game_event", 24: "in_game_event", 25: "in_game_event",
+    26: "in_game_event", 35: "in_game_event", 28: "news",
+}
+
+_KEYWORDS = [   # used only for plain news posts and posts without a type
+    ("release", re.compile(r"(\bv?1\.0(?![.\d])|\bfull release|\bleav(es|ing) early access|\bout of early access|"
+                           r"\b(launch(es|ed)?|releas(es|ed)) (today|on steam)\b)", re.I)),
+    ("free_weekend", re.compile(r"free (weekend|to play this weekend|play days?)|play (it )?for free", re.I)),
+    ("dlc", re.compile(r"\b(dlc|expansion|soundtrack|season pass)\b", re.I)),
+    ("sale", re.compile(r"\b(sale|\d{1,2}\s?% off|discount(ed)?)\b", re.I)),
+    ("major_update", re.compile(r"\b(major|big|huge|content|free) update\b|\bupdate \d|\bnew (chapter|biome|season|map|mode)\b", re.I)),
+    ("patch", re.compile(r"\b(hot ?fix|patch(notes)?|bug ?fix(es)?)\b", re.I)),
+    ("update", re.compile(r"\bupdate\b", re.I)),
+]
+
+
+def classify_event(event_type: int | None, title: str | None) -> str:
+    """Category of a developer post: Steam's own type first, the title as a fallback."""
+    cat = EVENT_TYPES.get(event_type or 0)
+    if cat and cat != "news":
+        return cat
+    for name, rx in _KEYWORDS:
+        if rx.search(title or ""):
+            return name
+    return "news"
+
+
+def parse_partner_events(j: Any, appid: int) -> list[dict] | None:
+    if not isinstance(j, dict) or j.get("success") != 1:
+        return None
+    out = []
+    for e in j.get("events") or []:
+        if not isinstance(e, dict) or e.get("hidden") or e.get("published") == 0:
+            continue
+        if e.get("appid") and int(e["appid"]) != appid:
+            continue
+        body = e.get("announcement_body") or {}
+        title = html.unescape(body.get("headline") or e.get("event_name") or "Update")
+        day = _day(e.get("rtime32_start_time") or body.get("posttime"))
+        gid = str(body.get("gid") or e.get("gid") or "")
+        if not day or not gid:
+            continue
+        etype = int(e["event_type"]) if str(e.get("event_type", "")).isdigit() else None
+        out.append({
+            "gid": gid, "title": title, "day": date.fromisoformat(day), "event_type": etype,
+            "category": classify_event(etype, title),
+            "url": f"https://store.steampowered.com/news/app/{appid}/view/{gid}",
+        })
+    return out
